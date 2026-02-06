@@ -1,8 +1,10 @@
-# Create the GitHub repository
-resource "github_repository" "repo" {
-  name        = var.repository_name
-  description = var.repository_description
-  visibility  = var.repository_visibility
+# Create GitHub repositories
+resource "github_repository" "repos" {
+  for_each = { for repo in var.repositories : repo.name => repo }
+
+  name        = each.value.name
+  description = each.value.description
+  visibility  = each.value.visibility
 
   # Enable features
   has_issues      = true
@@ -31,9 +33,11 @@ resource "github_repository" "repo" {
   topics = ["terraform-managed", "infrastructure-as-code"]
 }
 
-# Configure GitHub Actions permissions for the repository
-resource "github_actions_repository_permissions" "repo" {
-  repository = github_repository.repo.name
+# Configure GitHub Actions permissions for each repository
+resource "github_actions_repository_permissions" "repos" {
+  for_each = github_repository.repos
+
+  repository = each.value.name
 
   # Enable GitHub Actions
   enabled = true
@@ -42,26 +46,31 @@ resource "github_actions_repository_permissions" "repo" {
   allowed_actions = "all"
 }
 
-# Create repository variable for Copilot agent firewall allowlist
+# Create repository variable for Copilot agent firewall allowlist (consistent across all repos)
 resource "github_actions_variable" "copilot_firewall_allowlist" {
-  repository    = github_repository.repo.name
+  for_each = github_repository.repos
+
+  repository    = each.value.name
   variable_name = "COPILOT_AGENT_FIREWALL_ALLOW_LIST_ADDITIONS"
   value         = join(",", var.copilot_firewall_allowlist)
 }
 
 # Configure workflow permissions to allow GitHub Actions to create PRs
-# This enables Copilot (and other GitHub Actions) to create pull requests
-resource "github_workflow_repository_permissions" "repo" {
-  repository = github_repository.repo.name
+resource "github_workflow_repository_permissions" "repos" {
+  for_each = github_repository.repos
+
+  repository = each.value.name
 
   # Allow GitHub Actions to create and approve pull requests
   can_approve_pull_request_reviews = var.enable_copilot_pr_from_actions
 }
 
-# Create branch protection ruleset for main branch
+# Create branch protection ruleset for main branch on each repository
 resource "github_repository_ruleset" "main_branch_protection" {
+  for_each = { for repo in var.repositories : repo.name => repo }
+
   name        = "Protect main branch"
-  repository  = github_repository.repo.name
+  repository  = github_repository.repos[each.key].name
   target      = "branch"
   enforcement = "active"
 
@@ -89,11 +98,11 @@ resource "github_repository_ruleset" "main_branch_protection" {
 
     # Require pull requests before merging
     pull_request {
-      required_approving_review_count   = var.branch_protection_required_approving_review_count
-      dismiss_stale_reviews_on_push     = true
-      require_code_owner_review         = false
-      require_last_push_approval        = false
-      required_review_thread_resolution = false
+      required_approving_review_count       = each.value.branch_protection_required_approving_review_count
+      dismiss_stale_reviews_on_push         = true
+      require_code_owner_review             = false
+      require_last_push_approval            = false
+      required_review_thread_resolution     = false
     }
 
     # Require linear history (no merge commits from branches)

@@ -1,18 +1,18 @@
 # GitHub Repository Terraform Configuration
 
-This Terraform configuration creates and manages a GitHub repository with the following features:
+This Terraform configuration creates and manages multiple GitHub repositories with the following features:
 
 ## Resources Managed
 
 ### Repository Configuration
-- **Repository**: Creates a new repository in your GitHub organization with configurable settings
-- **Auto-initialization**: Repository is created with an initial README
+- **Repositories**: Creates multiple repositories in your GitHub organization with configurable settings
+- **Auto-initialization**: Repositories are created with an initial README
 - **Merge Settings**: Configures merge commit, squash merge, and rebase merge options
 - **Security**: Enables vulnerability alerts for dependencies
 
 ### Branch Protection
 - **Main Branch Protection**: Implements a repository ruleset for the `main` branch with:
-  - Required pull request reviews (configurable count, default: 1)
+  - Required pull request reviews (configurable count per repository)
   - Protection against deletion
   - Protection against force pushes
   - Stale review dismissal on new commits
@@ -25,6 +25,7 @@ This Terraform configuration creates and manages a GitHub repository with the fo
   - `registry.terraform.io` - Terraform Registry for provider/module downloads
   - `checkpoint-api.hashicorp.com` - HashiCorp's update/telemetry service
   - `api0.prismacloud.io` - Prisma Cloud API for security scanning
+  - **Note**: This configuration is consistent across all repositories
 
 ## Prerequisites
 
@@ -72,18 +73,27 @@ terraform init
 ```
 
 ### 2. Review and Customize Variables
-Create a `terraform.tfvars` file with your values:
+Edit the `terraform.tfvars` file with your values:
 
 ```hcl
 github_organization = "your-org-name"
-repository_name     = "my-new-repo"
-repository_description = "My awesome repository"
-repository_visibility = "private"
 
-# Optional: Customize branch protection
-branch_protection_required_approving_review_count = 2
+repositories = [
+  {
+    name                                          = "my-first-repo"
+    description                                   = "My first repository"
+    visibility                                    = "private"
+    branch_protection_required_approving_review_count = 1
+  },
+  {
+    name                                          = "my-second-repo"
+    description                                   = "My second repository"
+    visibility                                    = "private"
+    branch_protection_required_approving_review_count = 2
+  }
+]
 
-# Optional: Add additional domains to Copilot firewall allowlist
+# Optional: Customize Copilot firewall allowlist (applies to all repositories)
 copilot_firewall_allowlist = [
   "registry.terraform.io",
   "checkpoint-api.hashicorp.com",
@@ -94,7 +104,7 @@ copilot_firewall_allowlist = [
 
 Or provide variables via command line:
 ```bash
-terraform plan -var="github_organization=your-org" -var="repository_name=my-repo"
+terraform plan -var="github_organization=your-org"
 ```
 
 ### 3. Plan
@@ -111,10 +121,10 @@ terraform apply -var="github_organization=your-org"
 
 ### 5. Verify
 After successful apply, Terraform will output:
-- Repository ID and name
-- Repository URL (web and clone URLs)
+- Repository details for each created repository (ID, name, URLs)
 - Copilot firewall allowlist configuration
-- Branch protection ruleset ID
+- Branch protection ruleset IDs
+- Total count of repositories created
 
 ## Configuration Options
 
@@ -123,32 +133,27 @@ After successful apply, Terraform will output:
 | Variable | Description | Type | Default | Required |
 |----------|-------------|------|---------|----------|
 | `github_organization` | GitHub organization name | string | - | Yes |
-| `repository_name` | Name of the repository | string | `"example-repo"` | No |
-| `repository_description` | Repository description | string | `"Repository managed by Terraform"` | No |
-| `repository_visibility` | Repository visibility (public/private/internal) | string | `"private"` | No |
-| `copilot_firewall_allowlist` | Additional domains for Copilot agent | list(string) | See defaults | No |
-| `branch_protection_required_approving_review_count` | Required PR approvals | number | `1` | No |
-| `enable_copilot_pr_from_actions` | Allow Copilot to create PRs | bool | `true` | No |
+| `repositories` | List of repository objects to create | list(object) | - | Yes |
+| `repositories[].name` | Repository name | string | - | Yes |
+| `repositories[].description` | Repository description | string | - | Yes |
+| `repositories[].visibility` | Repository visibility (public/private/internal) | string | - | Yes |
+| `repositories[].branch_protection_required_approving_review_count` | Required PR approvals | number | - | Yes |
+| `copilot_firewall_allowlist` | Additional domains for Copilot agent (consistent across all repos) | list(string) | See defaults | No |
+| `enable_copilot_pr_from_actions` | Allow Copilot to create PRs (applies to all repos) | bool | `true` | No |
 
 ### Outputs
 
 | Output | Description |
 |--------|-------------|
-| `repository_id` | GitHub repository ID |
-| `repository_name` | Repository name |
-| `repository_full_name` | Full repository name (org/repo) |
-| `repository_html_url` | Repository web URL |
-| `repository_ssh_clone_url` | SSH clone URL |
-| `repository_http_clone_url` | HTTPS clone URL |
-| `default_branch` | Default branch name |
+| `repositories` | Map of created repositories with details (ID, name, URLs, branch protection ID) |
 | `copilot_firewall_allowlist` | Configured allowlist domains |
-| `branch_protection_ruleset_id` | Branch protection ruleset ID |
 | `organization` | Organization name |
+| `repository_count` | Number of repositories created |
 
 ## Security Considerations
 
 ### 🟢 Low Risk Operations
-- Creating a new repository
+- Creating new repositories
 - Configuring repository settings
 - Adding branch protection rules
 - Setting up Actions variables
@@ -157,7 +162,8 @@ After successful apply, Terraform will output:
 1. **Token Security**: Never commit your GitHub token to version control. Always use environment variables or secure secret management.
 2. **Permissions**: Ensure the token has minimum required permissions for your use case.
 3. **Branch Protection**: The ruleset allows repository admins to bypass protection on pull requests, which is necessary for automated workflows.
-4. **Copilot Firewall**: The allowlist extends (not replaces) the default allowed domains. Review the [Copilot allowlist reference](https://docs.github.com/en/copilot/reference/copilot-allowlist-reference) for defaults.
+4. **Copilot Firewall**: The allowlist extends (not replaces) the default allowed domains and is consistent across all repositories. Review the [Copilot allowlist reference](https://docs.github.com/en/copilot/reference/copilot-allowlist-reference) for defaults.
+5. **Multiple Repositories**: Each repository can have different branch protection settings, but Copilot firewall rules are shared across all repositories.
 
 ### State Management
 This configuration uses local state by default. For production use or team collaboration, consider using remote state:
