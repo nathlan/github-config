@@ -60,29 +60,12 @@ jobs:
         run: terraform fmt -check -recursive
         continue-on-error: true
       
-      - name: Generate GitHub App Token
-        id: app-token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ vars.GH_CONFIG_APP_ID }}
-          private-key: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
-          owner: ${{ env.GITHUB_ORGANIZATION }}
-          repositories: ${{ github.event.repository.name }}
-      
       - name: Terraform Init
         id: init
-        env:
-          GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
-          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
-          GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: terraform init -backend=false
       
       - name: Terraform Validate
         id: validate
-        env:
-          GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
-          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
-          GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: terraform validate -no-color
       
       - name: Setup TFLint
@@ -105,7 +88,7 @@ jobs:
           VALIDATE_OUTCOME: ${{ steps.validate.outcome }}
           TFLINT_OUTCOME: ${{ steps.tflint.outcome }}
         with:
-          github-token: ${{ steps.app-token.outputs.token }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
             #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
@@ -258,7 +241,7 @@ jobs:
         env:
           PLAN_EXITCODE: ${{ steps.plan.outputs.exitcode }}
         with:
-          github-token: ${{ steps.app-token.outputs.token }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
             const planOutput = fs.readFileSync('${{ env.TF_WORKING_DIR }}/plan_output.txt', 'utf8');
