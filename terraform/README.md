@@ -17,15 +17,17 @@ This Terraform configuration creates and manages multiple GitHub repositories wi
   - Protection against force pushes
   - Stale review dismissal on new commits
   - Bypass permission for repository admins on pull requests
+  - **Note**: Rulesets require GitHub Pro or public repositories. For private repos on free tier, use `github_branch_protection` instead.
 
 ### GitHub Actions & Copilot Configuration
 - **Actions Permissions**: Enables GitHub Actions with permissions to run all actions
-- **Workflow Permissions**: Allows GitHub Actions (including Copilot) to create and work with pull requests
+- **Workflow Permissions**: Configures GITHUB_TOKEN default permissions to "read" (more secure) and allows GitHub Actions (including Copilot) to create and work with pull requests
 - **Copilot Agent Firewall**: Configures the Copilot agent firewall allowlist via repository variable to permit outbound connections to:
   - `registry.terraform.io` - Terraform Registry for provider/module downloads
   - `checkpoint-api.hashicorp.com` - HashiCorp's update/telemetry service
   - `api0.prismacloud.io` - Prisma Cloud API for security scanning
   - **Note**: This configuration is consistent across all repositories
+  - **Note**: Requires GitHub App with "Actions: Read and write" permission. Set `manage_copilot_firewall_variable = false` if you encounter permission errors.
 
 ## Prerequisites
 
@@ -140,6 +142,7 @@ After successful apply, Terraform will output:
 | `repositories[].branch_protection_required_approving_review_count` | Required PR approvals | number | - | Yes |
 | `copilot_firewall_allowlist` | Additional domains for Copilot agent (consistent across all repos) | list(string) | See defaults | No |
 | `enable_copilot_pr_from_actions` | Allow Copilot to create PRs (applies to all repos) | bool | `true` | No |
+| `manage_copilot_firewall_variable` | Create Copilot firewall variable (requires GitHub App with Actions: Read and write permission) | bool | `true` | No |
 
 ### Outputs
 
