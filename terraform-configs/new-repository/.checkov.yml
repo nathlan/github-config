@@ -1,0 +1,43 @@
+# Checkov Security Scanning Configuration
+# https://www.checkov.io/2.Basics/CLI%20Command%20Reference.html
+
+# Framework to scan
+framework:
+  - terraform
+
+# Directories to skip
+skip-path:
+  - .terraform/
+  - .terraform.lock.hcl
+
+# Specific checks to skip (with justification)
+skip-check:
+  # GitHub Provider - These checks are not applicable or need customization
+  - CKV_GIT_1  # Ensure GitHub repository is private - we allow configurable visibility
+  - CKV_GIT_2  # Ensure GitHub repository has vulnerability alerts enabled - already configured in main.tf
+  - CKV_GIT_3  # Ensure GitHub repository has security features enabled - already configured
+  - CKV_GIT_4  # Ensure GitHub branch protection is enabled - using rulesets instead of legacy branch protection
+  - CKV_GIT_5  # Ensure GitHub repository has dependabot enabled - optional, can be enabled manually
+  - CKV_GIT_6  # Ensure GitHub repository requires signed commits - optional feature, not required for all repos
+
+# Severity threshold (fail on HIGH and above)
+check:
+  - HIGH
+  - CRITICAL
+
+# Output format
+output:
+  - cli
+  - sarif
+
+# Compact mode (less verbose)
+compact: true
+
+# Download external modules for scanning
+download-external-modules: false
+
+# Evaluation of variables
+evaluate-variables: true
+
+# Show code blocks in output
+include-code-blocks: true
