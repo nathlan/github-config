@@ -12,11 +12,6 @@ config {
   disabled_by_default = false
 }
 
-# Enable the GitHub provider plugin
-plugin "github" {
-  enabled = true
-}
-
 # Enable Terraform core rules
 plugin "terraform" {
   enabled = true
@@ -67,21 +62,4 @@ rule "terraform_standard_module_structure" {
 
 rule "terraform_workspace_remote" {
   enabled = false # We're using local backend for now
-}
-
-# GitHub-specific rules
-rule "github_repository_description_required" {
-  enabled = false # We have default values
-}
-
-rule "github_repository_homepage_url_required" {
-  enabled = false # Optional field
-}
-
-rule "github_repository_topics_required" {
-  enabled = true
-}
-
-rule "github_repository_vulnerability_alerts_enabled" {
-  enabled = true
 }
