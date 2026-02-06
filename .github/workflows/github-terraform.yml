@@ -5,13 +5,13 @@ on:
     branches:
       - main
     paths:
-      - 'terraform-configs/new-repository/**'
+      - 'terraform/**'
       - '.github/workflows/github-terraform.yml'
   pull_request:
     branches:
       - main
     paths:
-      - 'terraform-configs/new-repository/**'
+      - 'terraform/**'
       - '.github/workflows/github-terraform.yml'
   workflow_dispatch:
     inputs:
@@ -29,7 +29,7 @@ on:
 
 env:
   TF_VERSION: '1.9.0'
-  TF_WORKING_DIR: 'terraform-configs/new-repository'
+  TF_WORKING_DIR: 'terraform'
   GITHUB_ORGANIZATION: 'nathlan'
 
 permissions:
