@@ -65,12 +65,12 @@ variable "enable_copilot_pr_from_actions" {
 
 # GitHub App Authentication Variables
 # These can be sourced from environment variables:
-# - GITHUB_APP_ID or GH_APP_ID
+# - GITHUB_APP_ID or GH_CONFIG_APP_ID (recommended for CI/CD)
 # - GITHUB_APP_INSTALLATION_ID or GH_APP_INSTALLATION_ID
-# - GITHUB_APP_PEM_FILE (file path) or GH_APP_PRIVATE_KEY (PEM content)
+# - GITHUB_APP_PEM_FILE (file path) or GH_CONFIG_PRIVATE_KEY (PEM content, recommended for CI/CD)
 
 variable "app_id" {
-  description = "GitHub App ID for authentication. Set via GITHUB_APP_ID or GH_APP_ID environment variable."
+  description = "GitHub App ID for authentication. Set via GITHUB_APP_ID or GH_CONFIG_APP_ID environment variable."
   type        = string
   default     = ""
   sensitive   = false
@@ -84,7 +84,7 @@ variable "app_installation_id" {
 }
 
 variable "app_pem_file" {
-  description = "Path to GitHub App private key PEM file or PEM content. Set via GITHUB_APP_PEM_FILE environment variable (file path) or GH_APP_PRIVATE_KEY (PEM content)."
+  description = "Path to GitHub App private key PEM file or PEM content. Set via GITHUB_APP_PEM_FILE environment variable (file path) or GH_CONFIG_PRIVATE_KEY (PEM content)."
   type        = string
   default     = ""
   sensitive   = true

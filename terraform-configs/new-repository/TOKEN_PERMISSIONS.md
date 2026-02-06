@@ -79,9 +79,9 @@ export GITHUB_APP_PEM_FILE="/path/to/private-key.pem"  # Path to PEM file
 **For CI/CD** (when you can't use file paths):
 
 ```bash
-export GH_APP_ID="123456"              # Your App ID
+export GH_CONFIG_APP_ID="123456"              # Your App ID
 export GH_APP_INSTALLATION_ID="78910"  # Your Installation ID
-export GH_APP_PRIVATE_KEY="$(cat /path/to/private-key.pem)"  # PEM content as string
+export GH_CONFIG_PRIVATE_KEY="$(cat /path/to/private-key.pem)"  # PEM content as string
 ```
 
 ### CI/CD Configuration
@@ -90,9 +90,9 @@ export GH_APP_PRIVATE_KEY="$(cat /path/to/private-key.pem)"  # PEM content as st
 
 Store these as **Repository Secrets** or **Organization Secrets**:
 
-- **`GH_APP_ID`** (Variable) - Your GitHub App ID
+- **`GH_CONFIG_APP_ID`** (Variable) - Your GitHub App ID
 - **`GH_APP_INSTALLATION_ID`** (Variable) - Your Installation ID  
-- **`GH_APP_PRIVATE_KEY`** (Secret) - Full content of your PEM file
+- **`GH_CONFIG_PRIVATE_KEY`** (Secret) - Full content of your PEM file
 
 Example workflow:
 
@@ -113,16 +113,16 @@ jobs:
         
       - name: Terraform Init
         env:
-          GITHUB_APP_ID: ${{ vars.GH_APP_ID }}
+          GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
           GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_APP_INSTALLATION_ID }}
-          GITHUB_APP_PEM_FILE: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: terraform init
         
       - name: Terraform Apply
         env:
-          GITHUB_APP_ID: ${{ vars.GH_APP_ID }}
+          GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
           GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_APP_INSTALLATION_ID }}
-          GITHUB_APP_PEM_FILE: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: terraform apply -auto-approve -var="github_organization=your-org"
 ```
 
@@ -132,16 +132,16 @@ jobs:
 
 | Variable Name | Type | Description |
 |---------------|------|-------------|
-| `GH_APP_ID` | Variable | GitHub App ID (numeric) - **This is what you should set** |
+| `GH_CONFIG_APP_ID` | Variable | GitHub App ID (numeric) - **This is what you should set** |
 | `GH_APP_INSTALLATION_ID` | Variable | Installation ID (numeric) - **This is what you should set** |
-| `GH_APP_PRIVATE_KEY` | Secret | Full PEM file content - **This is the secret name to use** |
+| `GH_CONFIG_PRIVATE_KEY` | Secret | Full PEM file content - **This is the secret name to use** |
 
 ### How Terraform reads them:
 
 The Terraform provider configuration maps these to:
-- `GH_APP_ID` or `GITHUB_APP_ID` → `var.app_id`
+- `GH_CONFIG_APP_ID` or `GITHUB_APP_ID` → `var.app_id`
 - `GH_APP_INSTALLATION_ID` or `GITHUB_APP_INSTALLATION_ID` → `var.app_installation_id`
-- `GH_APP_PRIVATE_KEY` or `GITHUB_APP_PEM_FILE` → `var.app_pem_file`
+- `GH_CONFIG_PRIVATE_KEY` or `GITHUB_APP_PEM_FILE` → `var.app_pem_file`
 
 ## Terraform Provider Configuration
 
@@ -152,9 +152,9 @@ provider "github" {
   owner = var.github_organization
   
   app_auth {
-    id              = var.app_id              # from GITHUB_APP_ID or GH_APP_ID
+    id              = var.app_id              # from GITHUB_APP_ID or GH_CONFIG_APP_ID
     installation_id = var.app_installation_id # from GITHUB_APP_INSTALLATION_ID or GH_APP_INSTALLATION_ID
-    pem_file        = var.app_pem_file        # from GITHUB_APP_PEM_FILE (path) or GH_APP_PRIVATE_KEY (content)
+    pem_file        = var.app_pem_file        # from GITHUB_APP_PEM_FILE (path) or GH_CONFIG_PRIVATE_KEY (content)
   }
 }
 ```
