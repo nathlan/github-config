@@ -3,7 +3,7 @@
 
 config {
   # Enable module inspection
-  module = true
+  call_module_type = "all"
   
   # Force the provider source to be set
   force = false
