@@ -1,4 +1,4 @@
-name: Terraform GitHub Provider - CI/CD
+name: CI/CD - Terraform - GitHub Provider
 
 on:
   push:
@@ -30,7 +30,7 @@ on:
 env:
   TF_VERSION: '1.9.0'
   TF_WORKING_DIR: 'terraform'
-  GITHUB_ORGANIZATION: 'nathlan'
+  GITHUB_ORG: 'nathlan'
 
 permissions:
   contents: read
@@ -48,25 +48,16 @@ jobs:
     
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.1.1
+        uses: actions/checkout@v6
       
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
       
       - name: Terraform Format Check
         id: fmt
-        run: terraform fmt -check -recursive
-        continue-on-error: true
-      
-      - name: Generate GitHub App Token
-        id: app-token
-        uses: actions/create-github-app-token@d3ccb9bb9e8593f7e2e6e6c4d86c0163fb56a77d # v1.11.2
-        with:
-          app-id: ${{ vars.GH_CONFIG_APP_ID }}
-          private-key: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
-          owner: ${{ env.GITHUB_ORGANIZATION }}
+        run: terraform fmt -recursive
       
       - name: Terraform Init
         id: init
@@ -85,7 +76,7 @@ jobs:
         run: terraform validate -no-color
       
       - name: Setup TFLint
-        uses: terraform-linters/setup-tflint@da2d039c9afa1bd8f97e4ad9bc2e5bc31ed8d1c1 # v4.1.0
+        uses: terraform-linters/setup-tflint@v6
       
       - name: Initialize TFLint
         run: tflint --init
@@ -97,19 +88,19 @@ jobs:
       
       - name: Comment Validation Results on PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           FMT_OUTCOME: ${{ steps.fmt.outcome }}
           INIT_OUTCOME: ${{ steps.init.outcome }}
           VALIDATE_OUTCOME: ${{ steps.validate.outcome }}
           TFLINT_OUTCOME: ${{ steps.tflint.outcome }}
         with:
-          github-token: ${{ steps.app-token.outputs.token }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
-            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-            #### TFLint 🔍\`${{ steps.tflint.outcome }}\`
+            const output = `#### Terraform Format and Style \`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization \`${{ steps.init.outcome }}\`
+            #### Terraform Validation \`${{ steps.validate.outcome }}\`
+            #### TFLint \`${{ steps.tflint.outcome }}\`
             
             *Pusher: @${{ github.actor }}, Working Directory: \`${{ env.TF_WORKING_DIR }}\`*`;
             
@@ -137,38 +128,32 @@ jobs:
     
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.1.1
+        uses: actions/checkout@v6
       
       - name: Run Checkov Security Scan
         id: checkov
-        uses: bridgecrewio/checkov-action@d25e9d386a2e2e8a4ae33bd2d2fa7f3b3e0c5e4a # v12.2897.0
+        uses: bridgecrewio/checkov-action@v12
         with:
           directory: ${{ env.TF_WORKING_DIR }}
           framework: terraform
-          output_format: cli,sarif
-          output_file_path: console,results.sarif
+          output_format: cli
           soft_fail: false # Fail the build on security violations
           download_external_modules: false
-          config_file: ${{ env.TF_WORKING_DIR }}/.checkov.yml
-      
-      - name: Upload Checkov SARIF results
-        if: success() || failure()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: results.sarif
-          category: checkov
       
       - name: Comment Security Results on PR
         if: github.event_name == 'pull_request' && (success() || failure())
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
+        env:
+          CHECKOV_OUTCOME: ${{ steps.checkov.outcome }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `#### Security Scan (Checkov) 🔒\`${{ steps.checkov.outcome }}\`
+            const checkovOutcome = process.env.CHECKOV_OUTCOME;
+            const output = `#### Security Scan (Checkov) \`${checkovOutcome}\`
             
-            ${steps.checkov.outcome === 'failure' ? '⚠️ Security issues found. Please review the SARIF results.' : '✅ No security issues found.'}
+            ${checkovOutcome === 'failure' ? 'Security issues found. Review workflow logs for details.' : 'No security issues found.'}
             
-            *Review security findings in the Security tab > Code scanning alerts*`;
+            *For details, see the workflow run logs.*`;
             
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -193,21 +178,21 @@ jobs:
     
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.1.1
+        uses: actions/checkout@v6
       
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: true
       
       - name: Generate GitHub App Token
         id: app-token
-        uses: actions/create-github-app-token@d3ccb9bb9e8593f7e2e6e6c4d86c0163fb56a77d # v1.11.2
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ vars.GH_CONFIG_APP_ID }}
           private-key: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
-          owner: ${{ env.GITHUB_ORGANIZATION }}
+          owner: ${{ env.GITHUB_ORG }}
       
       - name: Terraform Init
         id: init
@@ -225,52 +210,62 @@ jobs:
           GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: |
           terraform plan \
-            -var="github_organization=${{ env.GITHUB_ORGANIZATION }}" \
-            -out=tfplan \
+            -input=false \
+            -var="github_organization=${{ env.GITHUB_ORG }}" \
+            -out=github.tfplan \
             -detailed-exitcode \
             -no-color
         continue-on-error: true
       
-      - name: Save Plan Output
+      - name: Save Plan Output for PR Comment
+        if: steps.plan.outputs.exitcode != '1'
         id: plan-output
         env:
           GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
           GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
           GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: |
-          terraform show -no-color tfplan > plan_output.txt
+          # Generate human-readable plan output for PR comments (not stored in artifact)
+          terraform show -no-color github.tfplan > plan_output.txt
       
       - name: Upload Plan Artifact
-        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.4.3
+        if: steps.plan.outputs.exitcode != '1'
+        uses: actions/upload-artifact@v6
         with:
           name: terraform-plan
           path: |
-            ${{ env.TF_WORKING_DIR }}/tfplan
-            ${{ env.TF_WORKING_DIR }}/plan_output.txt
+            ${{ env.TF_WORKING_DIR }}/github.tfplan
             ${{ env.TF_WORKING_DIR }}/.terraform.lock.hcl
           retention-days: 30
           if-no-files-found: error
       
       - name: Comment Plan on PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           PLAN_EXITCODE: ${{ steps.plan.outputs.exitcode }}
         with:
-          github-token: ${{ steps.app-token.outputs.token }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const planOutput = fs.readFileSync('${{ env.TF_WORKING_DIR }}/plan_output.txt', 'utf8');
             const planExitCode = process.env.PLAN_EXITCODE;
             
-            let planStatus = '✅ No changes';
+            let planStatus = 'No changes';
+            let planOutput = '';
+            
             if (planExitCode === '1') {
-              planStatus = '❌ Plan failed';
+              planStatus = 'Plan failed';
             } else if (planExitCode === '2') {
-              planStatus = '📝 Changes detected';
+              planStatus = 'Changes detected';
+              planOutput = fs.readFileSync('${{ env.TF_WORKING_DIR }}/plan_output.txt', 'utf8');
+            } else {
+              planOutput = fs.readFileSync('${{ env.TF_WORKING_DIR }}/plan_output.txt', 'utf8');
             }
             
-            const output = `#### Terraform Plan ${planStatus}
+            let output = `#### Terraform Plan ${planStatus}`;
+            
+            if (planOutput) {
+              output += `
             
             <details><summary>Show Plan</summary>
             
@@ -278,7 +273,10 @@ jobs:
             ${planOutput.slice(0, 60000)}
             \`\`\`
             
-            </details>
+            </details>`;
+            }
+            
+            output += `
             
             *Pusher: @${{ github.actor }}, Working Directory: \`${{ env.TF_WORKING_DIR }}\`, Workflow: \`${{ github.workflow }}\`*`;
             
@@ -306,27 +304,27 @@ jobs:
       (github.event_name == 'schedule')
     environment:
       name: github-admin
-      url: https://github.com/${{ env.GITHUB_ORGANIZATION }}
+      url: https://github.com/${{ env.GITHUB_ORG }}
     defaults:
       run:
         working-directory: ${{ env.TF_WORKING_DIR }}
     
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.1.1
+        uses: actions/checkout@v6
       
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
       
       - name: Generate GitHub App Token
         id: app-token
-        uses: actions/create-github-app-token@d3ccb9bb9e8593f7e2e6e6c4d86c0163fb56a77d # v1.11.2
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ vars.GH_CONFIG_APP_ID }}
           private-key: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
-          owner: ${{ env.GITHUB_ORGANIZATION }}
+          owner: ${{ env.GITHUB_ORG }}
       
       - name: Terraform Init
         env:
@@ -337,7 +335,7 @@ jobs:
       
       - name: Download Plan Artifact
         if: github.event_name != 'schedule'
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        uses: actions/download-artifact@v7
         with:
           name: terraform-plan
           path: ${{ env.TF_WORKING_DIR }}
@@ -352,19 +350,20 @@ jobs:
           if [ "${{ github.event_name }}" == "schedule" ]; then
             echo "Running drift detection..."
             terraform plan \
-              -var="github_organization=${{ env.GITHUB_ORGANIZATION }}" \
+              -input=false \
+              -var="github_organization=${{ env.GITHUB_ORG }}" \
               -detailed-exitcode
           else
             echo "Applying saved plan..."
-            terraform apply -auto-approve tfplan
+            terraform apply -input=false -auto-approve github.tfplan
           fi
       
       - name: Create Deployment Summary
         if: success() && github.event_name != 'schedule'
         run: |
-          echo "## Terraform Apply Successful ✅" >> $GITHUB_STEP_SUMMARY
+          echo "## Terraform Apply Successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Organization:** ${{ env.GITHUB_ORGANIZATION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Organization:** ${{ env.GITHUB_ORG }}" >> $GITHUB_STEP_SUMMARY
           echo "**Working Directory:** ${{ env.TF_WORKING_DIR }}" >> $GITHUB_STEP_SUMMARY
           echo "**Terraform Version:** ${{ env.TF_VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
@@ -372,7 +371,7 @@ jobs:
       
       - name: Report Drift Detection
         if: github.event_name == 'schedule'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
@@ -380,17 +379,17 @@ jobs:
             
             if (applyExitCode === 'failure') {
               // Drift detected
-              core.warning('⚠️ Drift detected in GitHub infrastructure!');
+              core.warning('Drift detected in GitHub infrastructure!');
               
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: `🔍 Drift Detected: GitHub Infrastructure - ${new Date().toISOString().split('T')[0]}`,
+                title: `Drift Detected: GitHub Infrastructure - ${new Date().toISOString().split('T')[0]}`,
                 body: `## Drift Detection Report
                 
                 Automated drift detection has identified changes in the GitHub infrastructure that differ from the Terraform state.
                 
-                **Organization:** ${{ env.GITHUB_ORGANIZATION }}
+                **Organization:** ${{ env.GITHUB_ORG }}
                 **Detection Date:** ${new Date().toISOString()}
                 **Workflow Run:** [View Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
                 
@@ -409,7 +408,7 @@ jobs:
                 labels: ['drift-detection', 'terraform', 'infrastructure']
               });
             } else {
-              core.info('✅ No drift detected - infrastructure matches Terraform state');
+              core.info('No drift detected - infrastructure matches Terraform state');
             }
 
   # Job 5: Drift Detection Report (runs only on schedule)
@@ -422,14 +421,14 @@ jobs:
     steps:
       - name: Create Drift Summary
         run: |
-          echo "## Daily Drift Detection 🔍" >> $GITHUB_STEP_SUMMARY
+          echo "## Daily Drift Detection" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Organization:** ${{ env.GITHUB_ORGANIZATION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Organization:** ${{ env.GITHUB_ORG }}" >> $GITHUB_STEP_SUMMARY
           echo "**Date:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ "${{ needs.apply.result }}" == "success" ]; then
-            echo "✅ **Status:** No drift detected" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** No drift detected" >> $GITHUB_STEP_SUMMARY
           else
-            echo "⚠️ **Status:** Drift detected - Issue created" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** Drift detected - Issue created" >> $GITHUB_STEP_SUMMARY
           fi

@@ -98,11 +98,11 @@ resource "github_repository_ruleset" "main_branch_protection" {
 
     # Require pull requests before merging
     pull_request {
-      required_approving_review_count       = each.value.branch_protection_required_approving_review_count
-      dismiss_stale_reviews_on_push         = true
-      require_code_owner_review             = false
-      require_last_push_approval            = false
-      required_review_thread_resolution     = false
+      required_approving_review_count   = each.value.branch_protection_required_approving_review_count
+      dismiss_stale_reviews_on_push     = true
+      require_code_owner_review         = false
+      require_last_push_approval        = false
+      required_review_thread_resolution = false
     }
 
     # Require linear history (no merge commits from branches)
