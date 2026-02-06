@@ -30,7 +30,7 @@ on:
 env:
   TF_VERSION: '1.9.0'
   TF_WORKING_DIR: 'terraform'
-  GITHUB_ORGANIZATION: 'nathlan'
+  GITHUB_ORG: 'nathlan'
 
 permissions:
   contents: read
@@ -192,7 +192,7 @@ jobs:
         with:
           app-id: ${{ vars.GH_CONFIG_APP_ID }}
           private-key: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
-          owner: ${{ env.GITHUB_ORGANIZATION }}
+          owner: ${{ env.GITHUB_ORG }}
       
       - name: Terraform Init
         id: init
@@ -211,7 +211,7 @@ jobs:
         run: |
           terraform plan \
             -input=false \
-            -var="github_organization=${{ env.GITHUB_ORGANIZATION }}" \
+            -var="github_organization=${{ env.GITHUB_ORG }}" \
             -out=github.tfplan \
             -detailed-exitcode \
             -no-color
@@ -304,7 +304,7 @@ jobs:
       (github.event_name == 'schedule')
     environment:
       name: github-admin
-      url: https://github.com/${{ env.GITHUB_ORGANIZATION }}
+      url: https://github.com/${{ env.GITHUB_ORG }}
     defaults:
       run:
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -324,7 +324,7 @@ jobs:
         with:
           app-id: ${{ vars.GH_CONFIG_APP_ID }}
           private-key: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
-          owner: ${{ env.GITHUB_ORGANIZATION }}
+          owner: ${{ env.GITHUB_ORG }}
       
       - name: Terraform Init
         env:
@@ -351,7 +351,7 @@ jobs:
             echo "Running drift detection..."
             terraform plan \
               -input=false \
-              -var="github_organization=${{ env.GITHUB_ORGANIZATION }}" \
+              -var="github_organization=${{ env.GITHUB_ORG }}" \
               -detailed-exitcode
           else
             echo "Applying saved plan..."
@@ -363,7 +363,7 @@ jobs:
         run: |
           echo "## Terraform Apply Successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Organization:** ${{ env.GITHUB_ORGANIZATION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Organization:** ${{ env.GITHUB_ORG }}" >> $GITHUB_STEP_SUMMARY
           echo "**Working Directory:** ${{ env.TF_WORKING_DIR }}" >> $GITHUB_STEP_SUMMARY
           echo "**Terraform Version:** ${{ env.TF_VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
@@ -389,7 +389,7 @@ jobs:
                 
                 Automated drift detection has identified changes in the GitHub infrastructure that differ from the Terraform state.
                 
-                **Organization:** ${{ env.GITHUB_ORGANIZATION }}
+                **Organization:** ${{ env.GITHUB_ORG }}
                 **Detection Date:** ${new Date().toISOString()}
                 **Workflow Run:** [View Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
                 
@@ -423,7 +423,7 @@ jobs:
         run: |
           echo "## Daily Drift Detection" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Organization:** ${{ env.GITHUB_ORGANIZATION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Organization:** ${{ env.GITHUB_ORG }}" >> $GITHUB_STEP_SUMMARY
           echo "**Date:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           

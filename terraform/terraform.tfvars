@@ -6,9 +6,9 @@ github_organization = "nathlan"
 # Define repositories as a list of objects
 repositories = [
   {
-    name        = "example-repo"
-    description = "Example repository created with Terraform"
-    visibility  = "private"
+    name                                              = "example-repo"
+    description                                       = "Example repository created with Terraform"
+    visibility                                        = "private"
     branch_protection_required_approving_review_count = 1
   }
   # Add more repositories here:
