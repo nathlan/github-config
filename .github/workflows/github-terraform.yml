@@ -1,4 +1,4 @@
-name: Terraform GitHub Provider - CI/CD
+name: CI/CD - Terraform - GitHub Provider
 
 on:
   push:
