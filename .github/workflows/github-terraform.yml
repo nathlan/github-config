@@ -97,10 +97,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
-            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-            #### TFLint 🔍\`${{ steps.tflint.outcome }}\`
+            const output = `#### Terraform Format and Style \`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization \`${{ steps.init.outcome }}\`
+            #### Terraform Validation \`${{ steps.validate.outcome }}\`
+            #### TFLint \`${{ steps.tflint.outcome }}\`
             
             *Pusher: @${{ github.actor }}, Working Directory: \`${{ env.TF_WORKING_DIR }}\`*`;
             
@@ -136,18 +136,10 @@ jobs:
         with:
           directory: ${{ env.TF_WORKING_DIR }}
           framework: terraform
-          output_format: cli,sarif
-          output_file_path: console,results.sarif
+          output_format: cli
           soft_fail: false # Fail the build on security violations
           download_external_modules: false
           config_file: ${{ env.TF_WORKING_DIR }}/.checkov.yml
-      
-      - name: Upload Checkov SARIF results
-        if: success() || failure()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: results.sarif
-          category: checkov
       
       - name: Comment Security Results on PR
         if: github.event_name == 'pull_request' && (success() || failure())
@@ -155,11 +147,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `#### Security Scan (Checkov) 🔒\`${{ steps.checkov.outcome }}\`
+            const output = `#### Security Scan (Checkov) \`${{ steps.checkov.outcome }}\`
             
-            ${steps.checkov.outcome === 'failure' ? '⚠️ Security issues found. Please review the SARIF results.' : '✅ No security issues found.'}
+            ${steps.checkov.outcome === 'failure' ? 'Security issues found. Review workflow logs for details.' : 'No security issues found.'}
             
-            *Review security findings in the Security tab > Code scanning alerts*`;
+            *For details, see the workflow run logs.*`;
             
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -254,11 +246,11 @@ jobs:
             const planOutput = fs.readFileSync('${{ env.TF_WORKING_DIR }}/plan_output.txt', 'utf8');
             const planExitCode = process.env.PLAN_EXITCODE;
             
-            let planStatus = '✅ No changes';
+            let planStatus = 'No changes';
             if (planExitCode === '1') {
-              planStatus = '❌ Plan failed';
+              planStatus = 'Plan failed';
             } else if (planExitCode === '2') {
-              planStatus = '📝 Changes detected';
+              planStatus = 'Changes detected';
             }
             
             const output = `#### Terraform Plan ${planStatus}
@@ -353,7 +345,7 @@ jobs:
       - name: Create Deployment Summary
         if: success() && github.event_name != 'schedule'
         run: |
-          echo "## Terraform Apply Successful ✅" >> $GITHUB_STEP_SUMMARY
+          echo "## Terraform Apply Successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Organization:** ${{ env.GITHUB_ORGANIZATION }}" >> $GITHUB_STEP_SUMMARY
           echo "**Working Directory:** ${{ env.TF_WORKING_DIR }}" >> $GITHUB_STEP_SUMMARY
@@ -371,12 +363,12 @@ jobs:
             
             if (applyExitCode === 'failure') {
               // Drift detected
-              core.warning('⚠️ Drift detected in GitHub infrastructure!');
+              core.warning('Drift detected in GitHub infrastructure!');
               
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: `🔍 Drift Detected: GitHub Infrastructure - ${new Date().toISOString().split('T')[0]}`,
+                title: `Drift Detected: GitHub Infrastructure - ${new Date().toISOString().split('T')[0]}`,
                 body: `## Drift Detection Report
                 
                 Automated drift detection has identified changes in the GitHub infrastructure that differ from the Terraform state.
@@ -400,7 +392,7 @@ jobs:
                 labels: ['drift-detection', 'terraform', 'infrastructure']
               });
             } else {
-              core.info('✅ No drift detected - infrastructure matches Terraform state');
+              core.info('No drift detected - infrastructure matches Terraform state');
             }
 
   # Job 5: Drift Detection Report (runs only on schedule)
@@ -413,14 +405,14 @@ jobs:
     steps:
       - name: Create Drift Summary
         run: |
-          echo "## Daily Drift Detection 🔍" >> $GITHUB_STEP_SUMMARY
+          echo "## Daily Drift Detection" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Organization:** ${{ env.GITHUB_ORGANIZATION }}" >> $GITHUB_STEP_SUMMARY
           echo "**Date:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ "${{ needs.apply.result }}" == "success" ]; then
-            echo "✅ **Status:** No drift detected" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** No drift detected" >> $GITHUB_STEP_SUMMARY
           else
-            echo "⚠️ **Status:** Drift detected - Issue created" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** Drift detected - Issue created" >> $GITHUB_STEP_SUMMARY
           fi
