@@ -139,17 +139,19 @@ jobs:
           output_format: cli
           soft_fail: false # Fail the build on security violations
           download_external_modules: false
-          config_file: ${{ env.TF_WORKING_DIR }}/.checkov.yml
       
       - name: Comment Security Results on PR
         if: github.event_name == 'pull_request' && (success() || failure())
         uses: actions/github-script@v8
+        env:
+          CHECKOV_OUTCOME: ${{ steps.checkov.outcome }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `#### Security Scan (Checkov) \`${{ steps.checkov.outcome }}\`
+            const checkovOutcome = process.env.CHECKOV_OUTCOME;
+            const output = `#### Security Scan (Checkov) \`${checkovOutcome}\`
             
-            ${steps.checkov.outcome === 'failure' ? 'Security issues found. Review workflow logs for details.' : 'No security issues found.'}
+            ${checkovOutcome === 'failure' ? 'Security issues found. Review workflow logs for details.' : 'No security issues found.'}
             
             *For details, see the workflow run logs.*`;
             
