@@ -32,4 +32,4 @@ enable_copilot_pr_from_actions = true
 
 # Manage Copilot firewall variable (requires GitHub App with Actions: Read and write permission)
 # Set to false if you get "403 Resource not accessible by integration" error
-manage_copilot_firewall_variable = false
+manage_copilot_firewall_variable = true
