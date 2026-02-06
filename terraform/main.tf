@@ -47,8 +47,10 @@ resource "github_actions_repository_permissions" "repos" {
 }
 
 # Create repository variable for Copilot agent firewall allowlist (consistent across all repos)
+# NOTE: Requires GitHub App with "Actions: Read and write" permission
+# If you get "403 Resource not accessible by integration" error, set manage_copilot_firewall_variable = false
 resource "github_actions_variable" "copilot_firewall_allowlist" {
-  for_each = github_repository.repos
+  for_each = var.manage_copilot_firewall_variable ? github_repository.repos : {}
 
   repository    = each.value.name
   variable_name = "COPILOT_AGENT_FIREWALL_ALLOW_LIST_ADDITIONS"
@@ -60,6 +62,11 @@ resource "github_workflow_repository_permissions" "repos" {
   for_each = github_repository.repos
 
   repository = each.value.name
+
+  # Set default workflow permissions for GITHUB_TOKEN
+  # "read" = read-only access (more secure, recommended)
+  # "write" = read-write access
+  default_workflow_permissions = "read"
 
   # Allow GitHub Actions to create and approve pull requests
   can_approve_pull_request_reviews = var.enable_copilot_pr_from_actions

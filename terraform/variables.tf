@@ -54,3 +54,9 @@ variable "enable_copilot_pr_from_actions" {
   type        = bool
   default     = true
 }
+
+variable "manage_copilot_firewall_variable" {
+  description = "Create COPILOT_AGENT_FIREWALL_ALLOW_LIST_ADDITIONS repository variable. Requires GitHub App with 'Actions: Read and write' permission."
+  type        = bool
+  default     = true
+}

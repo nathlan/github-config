@@ -20,3 +20,5 @@ crash.*.log
 # Terraform CLI configuration files
 .terraformrc
 terraform.rc
+*.zip
+LICENSE.txt

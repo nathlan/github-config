@@ -8,7 +8,7 @@ repositories = [
   {
     name                                              = "example-repo"
     description                                       = "Example repository created with Terraform"
-    visibility                                        = "private"
+    visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
   }
   # Add more repositories here:
@@ -29,3 +29,7 @@ copilot_firewall_allowlist = [
 
 # Enable Copilot to create PRs from GitHub Actions
 enable_copilot_pr_from_actions = true
+
+# Manage Copilot firewall variable (requires GitHub App with Actions: Read and write permission)
+# Set to false if you get "403 Resource not accessible by integration" error
+manage_copilot_firewall_variable = true
