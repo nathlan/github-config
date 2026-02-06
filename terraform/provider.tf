@@ -9,6 +9,6 @@ provider "github" {
   # - GITHUB_APP_ID: The GitHub App ID (from GH_CONFIG_APP_ID)
   # - GITHUB_APP_INSTALLATION_ID: The installation ID (from GH_CONFIG_INSTALLATION_ID)
   # - GITHUB_APP_PEM_FILE: The PEM file content (from GH_CONFIG_PRIVATE_KEY)
-  
+
   app_auth {} # When using `GITHUB_APP_XXX` environment variables
 }
