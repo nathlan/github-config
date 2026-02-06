@@ -85,7 +85,33 @@ Create a GitHub App with these permissions:
 1. Create a GitHub App in your organization settings
 2. Generate a private key for the app
 3. Install the app in your organization
-4. Use the app ID and private key for authentication (requires additional Terraform provider configuration)
+4. Configure Terraform with the app credentials:
+
+**Variable names for GitHub App authentication:**
+- `github_app_id` - The GitHub App ID (numeric)
+- `github_app_installation_id` - The installation ID (numeric)
+- `github_app_pem_file` - Path to the private key PEM file
+
+**Using environment variables (recommended):**
+```bash
+export GITHUB_APP_ID="123456"
+export GITHUB_APP_INSTALLATION_ID="78910"
+export GITHUB_APP_PEM_FILE="/path/to/private-key.pem"
+```
+
+**Or using Terraform variables:**
+```bash
+terraform apply \
+  -var="github_app_id=123456" \
+  -var="github_app_installation_id=78910" \
+  -var="github_app_pem_file=/path/to/private-key.pem"
+```
+
+**Secret name for CI/CD:**
+For GitHub Actions or other CI/CD systems, store the private key as:
+- Secret name: `GH_APP_PRIVATE_KEY` (contains the full PEM content)
+- Variable name: `GH_APP_ID` (contains the app ID)
+- Variable name: `GH_APP_INSTALLATION_ID` (contains the installation ID)
 
 ## Setting Up the Token
 
@@ -101,6 +127,87 @@ echo $GITHUB_TOKEN
 # Run Terraform
 terraform plan -var="github_organization=your-org"
 ```
+
+## GitHub MCP Server PR Creation Permissions
+
+If you want to use the **GitHub MCP (Model Context Protocol) server** to create pull requests directly (instead of using GitHub Actions), you need specific permissions.
+
+### Fine-Grained PAT for MCP Server
+
+Create a **Fine-Grained Personal Access Token** with these permissions:
+
+**Repository permissions** (for repositories where you want to create PRs):
+- ✅ `Contents` - **Read and write**
+  - **Required for**: Creating branches, committing files, pushing changes
+  
+- ✅ `Pull requests` - **Read and write**
+  - **Required for**: Creating, updating, and managing pull requests
+  
+- ✅ `Metadata` - **Read** (automatically included)
+  - **Required for**: Basic repository information
+
+**Optional but recommended:**
+- ✅ `Issues` - Read and write (if you want to reference issues in PRs)
+- ✅ `Workflows` - Read and write (if you want to manage workflow files)
+
+### How to Configure MCP Server
+
+**1. Create the Fine-Grained Token:**
+```
+GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens
+→ Generate new token
+→ Select repositories
+→ Set permissions: Contents (RW), Pull requests (RW), Metadata (R)
+```
+
+**2. Configure MCP Server:**
+
+Create or edit your MCP configuration file (e.g., `.windsurf/mcp.json` or `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "github_pat_YOUR_TOKEN_HERE"
+      }
+    }
+  }
+}
+```
+
+**3. Set Environment Variable (Alternative):**
+```bash
+export GITHUB_TOKEN="github_pat_YOUR_TOKEN_HERE"
+```
+
+### Comparison: Terraform vs MCP Server Permissions
+
+| Feature | Terraform Provider | GitHub MCP Server |
+|---------|-------------------|-------------------|
+| Create repositories | Administration: RW | Not needed |
+| Create PRs | Not primary use case | Contents: RW, Pull requests: RW |
+| Manage Actions | Actions: RW, Workflows: RW | Workflows: RW (optional) |
+| Branch protection | Administration: RW | Not available |
+| Organization settings | Org Administration: R | Not needed |
+
+**Key Insight:** MCP server needs **fewer permissions** than Terraform when only creating PRs, but **cannot manage** infrastructure like branch protection or Actions configuration.
+
+### Recommended Setup
+
+**For Infrastructure Management (Terraform):**
+- Use: Fine-grained PAT or GitHub App
+- Permissions: Administration, Actions, Contents, Workflows, Organization Admin
+- Purpose: Create repos, configure settings, manage infrastructure
+
+**For PR Creation (MCP Server):**
+- Use: Fine-grained PAT (separate token)
+- Permissions: Contents (RW), Pull requests (RW)
+- Purpose: Create branches and pull requests only
+
+**Security Benefit:** Use separate tokens with different scopes for different tools following the principle of least privilege.
 
 ### For CI/CD Pipelines
 

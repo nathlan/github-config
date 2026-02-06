@@ -62,3 +62,25 @@ variable "enable_copilot_pr_from_actions" {
   type        = bool
   default     = true
 }
+
+# GitHub App Authentication Variables (Optional - Alternative to PAT)
+variable "github_app_id" {
+  description = "GitHub App ID for authentication (alternative to PAT). Leave empty to use GITHUB_TOKEN."
+  type        = string
+  default     = ""
+  sensitive   = false
+}
+
+variable "github_app_installation_id" {
+  description = "GitHub App Installation ID for authentication. Required if using GitHub App."
+  type        = string
+  default     = ""
+  sensitive   = false
+}
+
+variable "github_app_pem_file" {
+  description = "Path to GitHub App private key PEM file. Required if using GitHub App."
+  type        = string
+  default     = ""
+  sensitive   = false
+}
