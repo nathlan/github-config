@@ -212,27 +212,29 @@ jobs:
           terraform plan \
             -input=false \
             -var="github_organization=${{ env.GITHUB_ORGANIZATION }}" \
-            -out=tfplan \
+            -out=github.tfplan \
             -detailed-exitcode \
             -no-color
         continue-on-error: true
       
-      - name: Save Plan Output
+      - name: Save Plan Output for PR Comment
+        if: steps.plan.outputs.exitcode != '1'
         id: plan-output
         env:
           GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
           GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
           GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: |
-          terraform show -no-color tfplan > plan_output.txt
+          # Generate human-readable plan output for PR comments (not stored in artifact)
+          terraform show -no-color github.tfplan > plan_output.txt
       
       - name: Upload Plan Artifact
+        if: steps.plan.outputs.exitcode != '1'
         uses: actions/upload-artifact@v6
         with:
           name: terraform-plan
           path: |
-            ${{ env.TF_WORKING_DIR }}/tfplan
-            ${{ env.TF_WORKING_DIR }}/plan_output.txt
+            ${{ env.TF_WORKING_DIR }}/github.tfplan
             ${{ env.TF_WORKING_DIR }}/.terraform.lock.hcl
           retention-days: 30
           if-no-files-found: error
@@ -246,17 +248,24 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const planOutput = fs.readFileSync('${{ env.TF_WORKING_DIR }}/plan_output.txt', 'utf8');
             const planExitCode = process.env.PLAN_EXITCODE;
             
             let planStatus = 'No changes';
+            let planOutput = '';
+            
             if (planExitCode === '1') {
               planStatus = 'Plan failed';
             } else if (planExitCode === '2') {
               planStatus = 'Changes detected';
+              planOutput = fs.readFileSync('${{ env.TF_WORKING_DIR }}/plan_output.txt', 'utf8');
+            } else {
+              planOutput = fs.readFileSync('${{ env.TF_WORKING_DIR }}/plan_output.txt', 'utf8');
             }
             
-            const output = `#### Terraform Plan ${planStatus}
+            let output = `#### Terraform Plan ${planStatus}`;
+            
+            if (planOutput) {
+              output += `
             
             <details><summary>Show Plan</summary>
             
@@ -264,7 +273,10 @@ jobs:
             ${planOutput.slice(0, 60000)}
             \`\`\`
             
-            </details>
+            </details>`;
+            }
+            
+            output += `
             
             *Pusher: @${{ github.actor }}, Working Directory: \`${{ env.TF_WORKING_DIR }}\`, Workflow: \`${{ github.workflow }}\`*`;
             
@@ -343,7 +355,7 @@ jobs:
               -detailed-exitcode
           else
             echo "Applying saved plan..."
-            terraform apply -input=false -auto-approve tfplan
+            terraform apply -input=false -auto-approve github.tfplan
           fi
       
       - name: Create Deployment Summary
