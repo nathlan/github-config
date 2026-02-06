@@ -72,7 +72,7 @@ jobs:
         id: init
         env:
           GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
-          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_APP_INSTALLATION_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
           GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: terraform init -backend=false
       
@@ -80,7 +80,7 @@ jobs:
         id: validate
         env:
           GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
-          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_APP_INSTALLATION_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
           GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: terraform validate -no-color
       
@@ -213,7 +213,7 @@ jobs:
         id: init
         env:
           GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
-          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_APP_INSTALLATION_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
           GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: terraform init
       
@@ -221,7 +221,7 @@ jobs:
         id: plan
         env:
           GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
-          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_APP_INSTALLATION_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
           GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: |
           terraform plan \
@@ -235,7 +235,7 @@ jobs:
         id: plan-output
         env:
           GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
-          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_APP_INSTALLATION_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
           GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: |
           terraform show -no-color tfplan > plan_output.txt
@@ -331,7 +331,7 @@ jobs:
       - name: Terraform Init
         env:
           GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
-          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_APP_INSTALLATION_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
           GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: terraform init
       
@@ -346,7 +346,7 @@ jobs:
         id: apply
         env:
           GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
-          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_APP_INSTALLATION_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
           GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: |
           if [ "${{ github.event_name }}" == "schedule" ]; then

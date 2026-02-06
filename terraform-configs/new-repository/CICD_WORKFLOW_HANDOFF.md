@@ -8,11 +8,22 @@ The Terraform configuration has been updated with the correct environment variab
 
 The user has added the following secrets to the repository:
 
-| Variable Name | Type | Value Set By User |
-|---------------|------|-------------------|
-| `GH_CONFIG_APP_ID` | Variable | ✅ Added to repo |
-| `GH_APP_INSTALLATION_ID` | Variable | ⚠️ Needs to be added |
-| `GH_CONFIG_PRIVATE_KEY` | Secret | ✅ Added to repo |
+| GitHub Secret/Variable | Type | Mapped to Env Var | Status |
+|------------------------|------|-------------------|--------|
+| `GH_CONFIG_APP_ID` | Variable | `GITHUB_APP_ID` | ✅ Added to repo |
+| `GH_CONFIG_INSTALLATION_ID` | Variable | `GITHUB_APP_INSTALLATION_ID` | ⚠️ Needs to be added |
+| `GH_CONFIG_PRIVATE_KEY` | Secret | `GITHUB_APP_PEM_FILE` | ✅ Added to repo |
+
+## Environment Variable Mapping
+
+The workflow maps GitHub secrets/variables to the environment variables that Terraform expects:
+
+```yaml
+env:
+  GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
+  GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
+  GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
+```
 
 ## What the CI/CD Workflow Agent Should Do
 
@@ -96,13 +107,20 @@ jobs:
 
 ### 3. Missing Variable
 
-⚠️ **ACTION REQUIRED:** The user needs to add `GH_APP_INSTALLATION_ID` as a repository variable. This is the installation ID of the GitHub App in the organization.
+⚠️ **ACTION REQUIRED:** The user needs to add `GH_CONFIG_INSTALLATION_ID` as a repository variable. This is the installation ID of the GitHub App in the organization.
 
 To find it:
 1. Go to the GitHub App settings
 2. Click on "Install App"
 3. Select the organization
 4. The installation ID is in the URL: `https://github.com/organizations/nathlan/settings/installations/XXXXXX`
+
+To set it:
+```bash
+gh variable set GH_CONFIG_INSTALLATION_ID \
+  --body "YOUR_INSTALLATION_ID" \
+  --repo nathlan/github-config
+```
 
 ### 4. Workflow Behavior
 
