@@ -2,12 +2,23 @@
 # Copy this to terraform.tfvars and customize with your values
 
 github_organization = "nathlan"
-repository_name     = "example-repo"
-repository_description = "Example repository created with Terraform"
-repository_visibility = "private"
 
-# Branch protection settings
-branch_protection_required_approving_review_count = 1
+# Define repositories as a list of objects
+repositories = [
+  {
+    name        = "example-repo"
+    description = "Example repository created with Terraform"
+    visibility  = "private"
+    branch_protection_required_approving_review_count = 1
+  }
+  # Add more repositories here:
+  # {
+  #   name        = "another-repo"
+  #   description = "Another example repository"
+  #   visibility  = "private"
+  #   branch_protection_required_approving_review_count = 1
+  # }
+]
 
 # Copilot firewall allowlist - these domains will be accessible by the Copilot agent
 copilot_firewall_allowlist = [
