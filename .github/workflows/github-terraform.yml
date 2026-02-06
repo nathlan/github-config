@@ -210,6 +210,7 @@ jobs:
           GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: |
           terraform plan \
+            -input=false \
             -var="github_organization=${{ env.GITHUB_ORGANIZATION }}" \
             -out=tfplan \
             -detailed-exitcode \
@@ -337,11 +338,12 @@ jobs:
           if [ "${{ github.event_name }}" == "schedule" ]; then
             echo "Running drift detection..."
             terraform plan \
+              -input=false \
               -var="github_organization=${{ env.GITHUB_ORGANIZATION }}" \
               -detailed-exitcode
           else
             echo "Applying saved plan..."
-            terraform apply -auto-approve tfplan
+            terraform apply -input=false -auto-approve tfplan
           fi
       
       - name: Create Deployment Summary

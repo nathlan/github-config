@@ -20,11 +20,6 @@ skip-check:
   - CKV_GIT_5  # Ensure GitHub repository has dependabot enabled - optional, can be enabled manually
   - CKV_GIT_6  # Ensure GitHub repository requires signed commits - optional feature, not required for all repos
 
-# Severity threshold (fail on HIGH and above)
-check:
-  - HIGH
-  - CRITICAL
-
 # Output format
 output:
   - cli
