@@ -28,7 +28,6 @@ check:
 # Output format
 output:
   - cli
-  - sarif
 
 # Compact mode (less verbose)
 compact: true
@@ -38,6 +37,3 @@ download-external-modules: false
 
 # Evaluation of variables
 evaluate-variables: true
-
-# Show code blocks in output
-include-code-blocks: true
