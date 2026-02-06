@@ -11,9 +11,9 @@ variable "github_organization" {
 variable "repositories" {
   description = "List of repositories to create and manage"
   type = list(object({
-    name                                          = string
-    description                                   = string
-    visibility                                    = string
+    name                                              = string
+    description                                       = string
+    visibility                                        = string
     branch_protection_required_approving_review_count = number
   }))
 
