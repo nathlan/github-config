@@ -48,10 +48,10 @@ jobs:
     
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.1.1
+        uses: actions/checkout@v6
       
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
       
@@ -62,7 +62,7 @@ jobs:
       
       - name: Generate GitHub App Token
         id: app-token
-        uses: actions/create-github-app-token@d3ccb9bb9e8593f7e2e6e6c4d86c0163fb56a77d # v1.11.2
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ vars.GH_CONFIG_APP_ID }}
           private-key: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
@@ -85,7 +85,7 @@ jobs:
         run: terraform validate -no-color
       
       - name: Setup TFLint
-        uses: terraform-linters/setup-tflint@da2d039c9afa1bd8f97e4ad9bc2e5bc31ed8d1c1 # v4.1.0
+        uses: terraform-linters/setup-tflint@v6
       
       - name: Initialize TFLint
         run: tflint --init
@@ -97,7 +97,7 @@ jobs:
       
       - name: Comment Validation Results on PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           FMT_OUTCOME: ${{ steps.fmt.outcome }}
           INIT_OUTCOME: ${{ steps.init.outcome }}
@@ -137,11 +137,11 @@ jobs:
     
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.1.1
+        uses: actions/checkout@v6
       
       - name: Run Checkov Security Scan
         id: checkov
-        uses: bridgecrewio/checkov-action@d25e9d386a2e2e8a4ae33bd2d2fa7f3b3e0c5e4a # v12.2897.0
+        uses: bridgecrewio/checkov-action@v12
         with:
           directory: ${{ env.TF_WORKING_DIR }}
           framework: terraform
@@ -160,7 +160,7 @@ jobs:
       
       - name: Comment Security Results on PR
         if: github.event_name == 'pull_request' && (success() || failure())
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -193,17 +193,17 @@ jobs:
     
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.1.1
+        uses: actions/checkout@v6
       
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: true
       
       - name: Generate GitHub App Token
         id: app-token
-        uses: actions/create-github-app-token@d3ccb9bb9e8593f7e2e6e6c4d86c0163fb56a77d # v1.11.2
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ vars.GH_CONFIG_APP_ID }}
           private-key: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
@@ -241,7 +241,7 @@ jobs:
           terraform show -no-color tfplan > plan_output.txt
       
       - name: Upload Plan Artifact
-        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.4.3
+        uses: actions/upload-artifact@v6
         with:
           name: terraform-plan
           path: |
@@ -253,7 +253,7 @@ jobs:
       
       - name: Comment Plan on PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           PLAN_EXITCODE: ${{ steps.plan.outputs.exitcode }}
         with:
@@ -313,16 +313,16 @@ jobs:
     
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.1.1
+        uses: actions/checkout@v6
       
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
       
       - name: Generate GitHub App Token
         id: app-token
-        uses: actions/create-github-app-token@d3ccb9bb9e8593f7e2e6e6c4d86c0163fb56a77d # v1.11.2
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ vars.GH_CONFIG_APP_ID }}
           private-key: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
@@ -337,7 +337,7 @@ jobs:
       
       - name: Download Plan Artifact
         if: github.event_name != 'schedule'
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        uses: actions/download-artifact@v7
         with:
           name: terraform-plan
           path: ${{ env.TF_WORKING_DIR }}
@@ -372,7 +372,7 @@ jobs:
       
       - name: Report Drift Detection
         if: github.event_name == 'schedule'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
