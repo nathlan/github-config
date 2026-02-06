@@ -67,7 +67,6 @@ jobs:
           app-id: ${{ vars.GH_CONFIG_APP_ID }}
           private-key: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
           owner: ${{ env.GITHUB_ORGANIZATION }}
-          repositories: ${{ github.repository }}
       
       - name: Terraform Init
         id: init
