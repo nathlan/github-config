@@ -15,7 +15,6 @@ config {
 # Enable the GitHub provider plugin
 plugin "github" {
   enabled = true
-  version = "0.3.0"
   source  = "github.com/terraform-linters/tflint-ruleset-github"
 }
 
