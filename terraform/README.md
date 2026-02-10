@@ -1,248 +1,239 @@
-# GitHub Repository Terraform Configuration
+# GitHub Configuration - ALZ Workload Template Repository
 
-This Terraform configuration creates and manages multiple GitHub repositories with the following features:
+This Terraform module manages the configuration of the `alz-workload-template` repository in the `nathlan` organization.
+
+## Overview
+
+This module manages:
+- Repository settings (name, description, visibility, template flag)
+- Repository features (issues, projects, wiki, discussions)
+- Merge settings (squash, merge commit, rebase, auto-delete branches)
+- Branch protection rules for the `main` branch
+- Team access permissions
+- Required status checks and pull request reviews
 
 ## Resources Managed
 
 ### Repository Configuration
-- **Repositories**: Creates multiple repositories in your GitHub organization with configurable settings
-- **Auto-initialization**: Repositories are created with an initial README
-- **Merge Settings**: Configures merge commit, squash merge, and rebase merge options
-- **Security**: Enables vulnerability alerts for dependencies
+- **github_repository.alz_workload_template**: Main repository settings including template flag, topics, and merge settings
 
 ### Branch Protection
-- **Main Branch Protection**: Implements a repository ruleset for the `main` branch with:
-  - Required pull request reviews (configurable count per repository)
-  - Protection against deletion
-  - Protection against force pushes
-  - Stale review dismissal on new commits
-  - Bypass permission for repository admins on pull requests
-  - **Note**: Rulesets require GitHub Pro or public repositories. For private repos on free tier, use `github_branch_protection` instead.
+- **github_repository_ruleset.main_branch_protection**: Modern ruleset-based branch protection for main branch
+  - Requires 1 approving review
+  - Requires status checks: validate, security, plan
+  - Dismisses stale reviews on new pushes
+  - Strict status checks (requires branches to be up-to-date)
+- **github_branch_protection_v3.main_push_restrictions**: Legacy branch protection for push restrictions to platform-engineering team
 
-### GitHub Actions & Copilot Configuration
-- **Actions Permissions**: Enables GitHub Actions with permissions to run all actions
-- **Workflow Permissions**: Configures GITHUB_TOKEN default permissions to "read" (more secure) and allows GitHub Actions (including Copilot) to create and work with pull requests
-- **Copilot Agent Firewall**: Configures the Copilot agent firewall allowlist via repository variable to permit outbound connections to:
-  - `registry.terraform.io` - Terraform Registry for provider/module downloads
-  - `checkpoint-api.hashicorp.com` - HashiCorp's update/telemetry service
-  - `api0.prismacloud.io` - Prisma Cloud API for security scanning
-  - **Note**: This configuration is consistent across all repositories
-  - **Note**: Requires GitHub App with "Actions: Read and write" permission. Set `manage_copilot_firewall_variable = false` if you encounter permission errors.
+### Team Access
+- **github_team_repository.maintainers**: Grants maintain access to configured teams
 
 ## Prerequisites
 
-### GitHub Token
-You need a GitHub Personal Access Token (PAT) or GitHub App with the following permissions:
+1. **GitHub Token**: A GitHub Personal Access Token (PAT) or GitHub App token with the following scopes:
+   - `repo` (full control of private repositories)
+   - `admin:org` (for organization management)
+   - `admin:repo_hook` (for managing webhooks)
 
-#### For Personal Access Token (Classic):
-- `repo` - Full control of private repositories
-- `admin:org` - Full control of organizations and teams (for organization-level settings)
-- `workflow` - Update GitHub Action workflows
+2. **Required Teams**: The following teams must exist in the organization:
+   - `platform-engineering` (for maintainer access and push restrictions)
 
-#### For Fine-Grained Personal Access Token:
-**Repository permissions:**
-- Administration: Read and write
-- Actions: Read and write
-- Contents: Read and write
-- Metadata: Read (automatically included)
-- Workflows: Read and write
-
-**Organization permissions (if managing organization-owned repositories):**
-- Administration: Read
-
-#### For GitHub App:
-**Repository permissions:**
-- Actions: Read and write
-- Administration: Read and write
-- Contents: Read and write
-- Workflows: Read and write
-
-Set the token as an environment variable:
-```bash
-export GITHUB_TOKEN="your-token-here"
-```
-
-### Terraform
-- Terraform >= 1.9.0
-- GitHub Provider ~> 6.11
+3. **Terraform Version**: >= 1.9.0
+4. **GitHub Provider**: ~> 6.0
 
 ## Usage
 
-### 1. Initialize Terraform
-```bash
-cd /tmp/gh-config-<timestamp>
-terraform init
-```
-
-### 2. Review and Customize Variables
-Edit the `terraform.tfvars` file with your values:
+### Basic Usage
 
 ```hcl
-github_organization = "your-org-name"
+# Set environment variable for authentication
+export GITHUB_TOKEN="your_github_token_here"
 
-repositories = [
-  {
-    name                                          = "my-first-repo"
-    description                                   = "My first repository"
-    visibility                                    = "private"
-    branch_protection_required_approving_review_count = 1
-  },
-  {
-    name                                          = "my-second-repo"
-    description                                   = "My second repository"
-    visibility                                    = "private"
-    branch_protection_required_approving_review_count = 2
-  }
-]
+# Initialize Terraform
+terraform init
 
-# Optional: Customize Copilot firewall allowlist (applies to all repositories)
-copilot_firewall_allowlist = [
-  "registry.terraform.io",
-  "checkpoint-api.hashicorp.com",
-  "api0.prismacloud.io",
-  "custom-domain.example.com"
-]
+# Review the plan
+terraform plan -var="github_organization=nathlan"
+
+# Apply the configuration
+terraform apply -var="github_organization=nathlan"
 ```
 
-Or provide variables via command line:
+### Custom Configuration
+
+```hcl
+# terraform.tfvars (create this file locally, it's gitignored)
+github_organization     = "nathlan"
+repository_name         = "alz-workload-template"
+repository_visibility   = "internal"
+required_status_checks  = ["validate", "security", "plan", "custom-check"]
+team_maintainers        = ["platform-engineering", "devops"]
+```
+
+### Importing Existing Resources
+
+If the repository already exists, you'll need to import it:
+
 ```bash
-terraform plan -var="github_organization=your-org"
+# Import the repository
+terraform import github_repository.alz_workload_template alz-workload-template
+
+# Import team access (get team ID first)
+export TEAM_ID=$(gh api orgs/nathlan/teams/platform-engineering --jq '.id')
+terraform import 'github_team_repository.maintainers["platform-engineering"]' ${TEAM_ID}:alz-workload-template
 ```
 
-### 3. Plan
-Review the changes Terraform will make:
-```bash
-terraform plan -var="github_organization=your-org"
-```
+## Variables
 
-### 4. Apply
-Apply the configuration to create the repository:
-```bash
-terraform apply -var="github_organization=your-org"
-```
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|----------|
+| github_organization | GitHub organization name | string | "nathlan" | no |
+| repository_name | Name of the repository | string | "alz-workload-template" | no |
+| repository_description | Description of the repository | string | "Template repository..." | no |
+| repository_visibility | Repository visibility | string | "internal" | no |
+| repository_topics | Topics for the repository | list(string) | ["azure", "terraform", ...] | no |
+| required_status_checks | Required status checks | list(string) | ["validate", "security", "plan"] | no |
+| team_maintainers | Teams with maintain access | list(string) | ["platform-engineering"] | no |
+| push_allowance_teams | Teams allowed to push | list(string) | ["platform-engineering"] | no |
 
-### 5. Verify
-After successful apply, Terraform will output:
-- Repository details for each created repository (ID, name, URLs)
-- Copilot firewall allowlist configuration
-- Branch protection ruleset IDs
-- Total count of repositories created
+## Outputs
 
-## Configuration Options
-
-### Variables
-
-| Variable | Description | Type | Default | Required |
-|----------|-------------|------|---------|----------|
-| `github_organization` | GitHub organization name | string | - | Yes |
-| `repositories` | List of repository objects to create | list(object) | - | Yes |
-| `repositories[].name` | Repository name | string | - | Yes |
-| `repositories[].description` | Repository description | string | - | Yes |
-| `repositories[].visibility` | Repository visibility (public/private/internal) | string | - | Yes |
-| `repositories[].branch_protection_required_approving_review_count` | Required PR approvals | number | - | Yes |
-| `copilot_firewall_allowlist` | Additional domains for Copilot agent (consistent across all repos) | list(string) | See defaults | No |
-| `enable_copilot_pr_from_actions` | Allow Copilot to create PRs (applies to all repos) | bool | `true` | No |
-| `manage_copilot_firewall_variable` | Create Copilot firewall variable (requires GitHub App with Actions: Read and write permission) | bool | `true` | No |
-
-### Outputs
-
-| Output | Description |
-|--------|-------------|
-| `repositories` | Map of created repositories with details (ID, name, URLs, branch protection ID) |
-| `copilot_firewall_allowlist` | Configured allowlist domains |
-| `organization` | Organization name |
-| `repository_count` | Number of repositories created |
+| Name | Description |
+|------|-------------|
+| repository_id | The ID of the repository |
+| repository_full_name | Full name (org/repo) |
+| repository_html_url | HTML URL of the repository |
+| repository_ssh_clone_url | SSH clone URL |
+| repository_http_clone_url | HTTP clone URL |
+| is_template | Whether repository is a template |
+| branch_protection_ruleset_id | ID of the branch protection ruleset |
+| team_access | Teams with access and their permissions |
 
 ## Security Considerations
 
-### 🟢 Low Risk Operations
-- Creating new repositories
-- Configuring repository settings
-- Adding branch protection rules
-- Setting up Actions variables
+### Authentication
+- **Never** commit the `GITHUB_TOKEN` to version control
+- Use environment variables or secure secret management systems
+- Consider using GitHub Apps for more fine-grained permissions and better audit trails
 
-### ⚠️ Important Notes
-1. **Token Security**: Never commit your GitHub token to version control. Always use environment variables or secure secret management.
-2. **Permissions**: Ensure the token has minimum required permissions for your use case.
-3. **Branch Protection**: The ruleset allows repository admins to bypass protection on pull requests, which is necessary for automated workflows.
-4. **Copilot Firewall**: The allowlist extends (not replaces) the default allowed domains and is consistent across all repositories. Review the [Copilot allowlist reference](https://docs.github.com/en/copilot/reference/copilot-allowlist-reference) for defaults.
-5. **Multiple Repositories**: Each repository can have different branch protection settings, but Copilot firewall rules are shared across all repositories.
+### Branch Protection
+- The configuration requires PR reviews before merging
+- Status checks must pass before merging
+- Conversation resolution is required
+- Administrators can bypass in emergencies but it's logged
 
-### State Management
-This configuration uses local state by default. For production use or team collaboration, consider using remote state:
-- **Terraform Cloud**: Managed state with collaboration features
-- **S3 + DynamoDB**: AWS-based state backend with locking
-- **Azure Blob Storage**: Azure-based state backend
-- **GCS**: Google Cloud Storage state backend
+### Least Privilege
+- Teams are granted only the minimum required permissions
+- The `platform-engineering` team has maintain access (not admin)
+- Push restrictions limit who can directly push to main
 
-To configure remote state, add a `backend` block to `terraform.tf`.
+### Lifecycle Protection
+- The repository resource has `prevent_destroy = true` to prevent accidental deletion
 
-## Copilot Agent Firewall Details
+## Risk Assessment
 
-The Copilot agent firewall restricts outbound internet access from the Copilot coding agent to prevent data exfiltration. By default, GitHub provides a comprehensive allowlist including:
-- Operating system package repositories (apt, yum, apk, etc.)
-- Container registries (Docker Hub, ECR, ACR, GCR, etc.)
-- Language package managers (npm, PyPI, Maven, RubyGems, etc.)
-- Common development tools and APIs
+**Risk Level**: 🟡 **MEDIUM**
 
-This configuration adds **custom domains** via the `COPILOT_AGENT_FIREWALL_ALLOW_LIST_ADDITIONS` repository variable, which extends the default allowlist for:
-- **Terraform Registry**: Required for Copilot to fetch Terraform providers and modules
-- **HashiCorp Checkpoint API**: For version checking and telemetry
-- **Prisma Cloud API**: For security scanning and compliance checks
+### Potential Impacts
+- **Branch Protection Changes**: May affect team workflow if rules are too restrictive
+- **Merge Settings**: Changing merge methods affects commit history
+- **Team Access**: Modifying access could lock out team members
+- **Template Flag**: Disabling `is_template` would remove the "Use this template" functionality
 
-### How It Works
-1. The repository variable is set with comma-separated domain names
-2. GitHub Copilot agent reads this variable when running in GitHub Actions
-3. The firewall permits outbound connections only to default + custom allowlist domains
-4. Blocked requests result in warnings/comments on PRs with details about the denied connection
+### Recommended Review Process
+1. Review all configuration changes in the PR
+2. Ensure team members are aware of new branch protection rules
+3. Verify required status checks exist in CI/CD workflows
+4. Test the template functionality after applying changes
+5. Monitor the first few PRs after applying to ensure workflows function correctly
 
-### Testing the Configuration
-After applying this Terraform configuration, you can verify the Copilot firewall is working by:
-1. Triggering a Copilot-generated PR from an Action
-2. Checking that Copilot can access Terraform Registry and other allowlisted domains
-3. Observing that connections to non-allowlisted domains are blocked and logged
+## State Management
 
-## Next Steps
+This configuration uses local state by default. For production use, consider:
 
-After creating this repository with Terraform:
+1. **Terraform Cloud**: Managed state with UI and team collaboration
+2. **S3 Backend**: With DynamoDB for locking
+3. **Azure Blob Storage**: For Azure-native environments
+4. **Remote Backend**: Any supported Terraform backend
 
-1. **Clone the Repository**: Use the output clone URLs to clone the newly created repository
-2. **Set Up Workflows**: Create GitHub Actions workflows to utilize Copilot for automated PR creation
-3. **Configure Branch Protection Further**: Adjust branch protection settings as needed for your workflow
-4. **Add Collaborators/Teams**: Use additional Terraform resources to grant access to teams or individuals
-5. **Import Existing Resources**: If this configuration needs to match an existing repository, use `terraform import`
+Example remote backend configuration:
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket         = "terraform-state-bucket"
+    key            = "github-config/alz-workload-template.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "terraform-locks"
+    encrypt        = true
+  }
+}
+```
+
+## Maintenance
+
+### Adding New Status Checks
+Update the `required_status_checks` variable in your tfvars file:
+
+```hcl
+required_status_checks = ["validate", "security", "plan", "new-check"]
+```
+
+### Modifying Team Access
+Update the `team_maintainers` variable to add or remove teams:
+
+```hcl
+team_maintainers = ["platform-engineering", "new-team"]
+```
+
+### Updating Branch Protection
+Modify the `github_repository_ruleset` resource in `main.tf` to adjust protection rules.
+
+## Known Limitations
+
+### Conversation Resolution Requirement
+The GitHub provider does not currently support setting "Require conversation resolution before merging" via Terraform. This setting must be configured manually through the GitHub UI:
+1. Go to repository Settings > General > Pull Requests
+2. Enable "Always suggest updating pull request branches"
+3. Enable "Require conversation resolution before merging"
+
+This limitation is noted in the Terraform configuration comments and may be addressed in future provider versions.
 
 ## Troubleshooting
 
 ### Common Issues
 
-**"Resource already exists"**
-- The repository name is already taken in your organization
-- Solution: Choose a different `repository_name` or import the existing repository
+**Error: Resource already exists**
+- Solution: Use `terraform import` to import existing resources
 
-**"401 Unauthorized"**
-- GitHub token is missing or invalid
-- Solution: Verify `GITHUB_TOKEN` environment variable is set correctly
+**Error: 401 Unauthorized**
+- Solution: Verify `GITHUB_TOKEN` is set and has required scopes
 
-**"403 Forbidden"**
-- Token lacks required permissions
-- Solution: Ensure token has `repo`, `admin:org`, and `workflow` scopes
+**Error: 403 Forbidden**
+- Solution: Token needs admin:org scope for organization-level resources
 
-**"Validation errors"**
-- Invalid variable values
-- Solution: Check variable validations and ensure values meet requirements
+**Error: Team not found**
+- Solution: Verify team slug is correct and team exists in organization
 
-**Copilot can't access allowlisted domains**
-- Variable not properly set
-- Solution: Check that `COPILOT_AGENT_FIREWALL_ALLOW_LIST_ADDITIONS` variable exists in repository
+**Error: Status check not found**
+- Solution: Ensure CI/CD workflows define the required status checks
+
+## Contributing
+
+When making changes to this configuration:
+
+1. Create a feature branch
+2. Make your changes
+3. Run `terraform fmt` to format code
+4. Run `terraform validate` to check syntax
+5. Create a PR with a clear description of changes
+6. Wait for review and approval
+7. Apply changes to infrastructure after merge
 
 ## References
 
-- [GitHub Terraform Provider Documentation](https://registry.terraform.io/providers/integrations/github/latest/docs)
-- [GitHub Copilot Agent Firewall Documentation](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/customize-the-agent-firewall)
-- [GitHub Actions Permissions](https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication)
-- [Copilot Allowlist Reference](https://docs.github.com/en/copilot/reference/copilot-allowlist-reference)
-
-## License
-
-This Terraform configuration is provided as-is for use in managing GitHub infrastructure.
+- [GitHub Provider Documentation](https://registry.terraform.io/providers/integrations/github/latest/docs)
+- [GitHub Repository Resource](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository)
+- [GitHub Repository Ruleset](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_ruleset)
+- [GitHub Branch Protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [GitHub Template Repositories](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-template-repository)

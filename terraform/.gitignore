@@ -9,11 +9,8 @@
 crash.log
 crash.*.log
 
-# Exclude .tfvars files that may contain sensitive data
-# Note: terraform.tfvars in this directory does NOT contain secrets
-# All secrets are passed via environment variables from GitHub Actions
-# Uncomment the line below if you add sensitive data to .tfvars files
-# *.tfvars
+# Exclude all .tfvars files, which might contain sensitive data
+*.tfvars
 *.tfvars.json
 
 # Ignore override files as they are usually used to override resources locally

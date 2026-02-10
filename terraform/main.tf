@@ -1,87 +1,57 @@
-# Create GitHub repositories
-resource "github_repository" "repos" {
-  for_each = { for repo in var.repositories : repo.name => repo }
+# ============================================================================
+# Repository Configuration
+# ============================================================================
+# Manages the alz-workload-template repository settings
+# This is a template repository used for creating new ALZ workload repositories
 
-  name        = each.value.name
-  description = each.value.description
-  visibility  = each.value.visibility
+resource "github_repository" "alz_workload_template" {
+  name        = var.repository_name
+  description = var.repository_description
+  visibility  = var.repository_visibility
 
-  # Enable features
+  # Template repository flag - CRITICAL for enabling "Use this template" button
+  is_template = true
+
+  # Repository topics for discoverability
+  topics = var.repository_topics
+
+  # Feature toggles
   has_issues      = true
+  has_projects    = false
+  has_wiki        = false
   has_discussions = false
-  has_projects    = true
-  has_wiki        = true
-
-  # Auto-initialize the repository with a README
-  auto_init = true
 
   # Merge settings
-  allow_merge_commit     = true
-  allow_squash_merge     = true
-  allow_rebase_merge     = true
-  allow_auto_merge       = true
+  allow_squash_merge = true
+  allow_merge_commit = false
+  allow_rebase_merge = true
+
+  # Automatically delete head branches after PRs are merged
   delete_branch_on_merge = true
 
-  # Squash merge settings
+  # Squash merge commit settings
   squash_merge_commit_title   = "PR_TITLE"
-  squash_merge_commit_message = "PR_BODY"
+  squash_merge_commit_message = "COMMIT_MESSAGES"
 
-  # Security settings
-  vulnerability_alerts = true
-
-  # Topics for better discoverability
-  topics = ["terraform-managed", "infrastructure-as-code"]
+  # Prevent accidental deletion of this critical template repository
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
-# Configure GitHub Actions permissions for each repository
-resource "github_actions_repository_permissions" "repos" {
-  for_each = github_repository.repos
+# ============================================================================
+# Branch Protection Rules
+# ============================================================================
+# Implements branch protection for main branch using modern ruleset approach
+# Requires PR reviews, status checks, and restricts push access
 
-  repository = each.value.name
-
-  # Enable GitHub Actions
-  enabled = true
-
-  # Allow all actions to run
-  allowed_actions = "all"
-}
-
-# Create repository variable for Copilot agent firewall allowlist (consistent across all repos)
-# NOTE: Requires GitHub App with "Actions: Read and write" permission
-# If you get "403 Resource not accessible by integration" error, set manage_copilot_firewall_variable = false
-resource "github_actions_variable" "copilot_firewall_allowlist" {
-  for_each = var.manage_copilot_firewall_variable ? github_repository.repos : {}
-
-  repository    = each.value.name
-  variable_name = "COPILOT_AGENT_FIREWALL_ALLOW_LIST_ADDITIONS"
-  value         = join(",", var.copilot_firewall_allowlist)
-}
-
-# Configure workflow permissions to allow GitHub Actions to create PRs
-resource "github_workflow_repository_permissions" "repos" {
-  for_each = github_repository.repos
-
-  repository = each.value.name
-
-  # Set default workflow permissions for GITHUB_TOKEN
-  # "read" = read-only access (more secure, recommended)
-  # "write" = read-write access
-  default_workflow_permissions = "read"
-
-  # Allow GitHub Actions to create and approve pull requests
-  can_approve_pull_request_reviews = var.enable_copilot_pr_from_actions
-}
-
-# Create branch protection ruleset for main branch on each repository
 resource "github_repository_ruleset" "main_branch_protection" {
-  for_each = { for repo in var.repositories : repo.name => repo }
-
-  name        = "Protect main branch"
-  repository  = github_repository.repos[each.key].name
+  name        = "Main Branch Protection"
+  repository  = github_repository.alz_workload_template.name
   target      = "branch"
   enforcement = "active"
 
-  # Apply to main branch
+  # Apply ruleset to main branch only
   conditions {
     ref_name {
       include = ["refs/heads/main"]
@@ -89,37 +59,84 @@ resource "github_repository_ruleset" "main_branch_protection" {
     }
   }
 
-  # Bypass actors - allow GitHub Actions bot to bypass for PR creation
+  # Branch protection rules
+  rules {
+    # Require pull request before merging
+    pull_request {
+      required_approving_review_count = 1
+      dismiss_stale_reviews_on_push   = true
+      require_code_owner_review       = false
+      require_last_push_approval      = false
+    }
+
+    # Require status checks to pass
+    required_status_checks {
+      strict_required_status_checks_policy = true
+      required_check {
+        context = "validate"
+      }
+      required_check {
+        context = "security"
+      }
+      required_check {
+        context = "plan"
+      }
+    }
+
+    # Require conversation resolution before merging
+    required_linear_history = false
+    required_signatures     = false
+
+    # Require conversation resolution
+    # Note: This is enforced at the repository level, not in rulesets
+  }
+
+  # Bypass actors - administrators can bypass in emergencies
   bypass_actors {
-    actor_id    = 5 # Repository admin role
+    actor_id    = 5 # Repository admins
     actor_type  = "RepositoryRole"
     bypass_mode = "pull_request"
   }
-
-  rules {
-    # Prevent deletion of the main branch
-    deletion = true
-
-    # Prevent force pushes
-    non_fast_forward = true
-
-    # Require pull requests before merging
-    pull_request {
-      required_approving_review_count   = each.value.branch_protection_required_approving_review_count
-      dismiss_stale_reviews_on_push     = true
-      require_code_owner_review         = false
-      require_last_push_approval        = false
-      required_review_thread_resolution = false
-    }
-
-    # Require linear history (no merge commits from branches)
-    required_linear_history = false
-
-    # Optional: Enable Copilot code review for PRs
-    # Uncomment if you want automatic Copilot code reviews
-    # copilot_code_review {
-    #   review_on_push            = true
-    #   review_draft_pull_requests = false
-    # }
-  }
 }
+
+# ============================================================================
+# Push Restrictions (using branch protection v4 for push restrictions)
+# ============================================================================
+# GitHub's modern ruleset API doesn't fully support push restrictions yet
+# Using legacy branch protection for push restrictions to specific teams
+
+resource "github_branch_protection_v3" "main_push_restrictions" {
+  repository = github_repository.alz_workload_template.name
+  branch     = "main"
+
+  # Restrict who can push to matching branches
+  restrictions {
+    teams = [for team in data.github_team.push_allowance : team.slug]
+    users = []
+    apps  = []
+  }
+
+  # Note: Other protection rules are managed by the ruleset above
+  # This resource only manages push restrictions
+  enforce_admins = false
+}
+
+# ============================================================================
+# Team Access
+# ============================================================================
+# Grant maintain access to platform-engineering team
+
+resource "github_team_repository" "maintainers" {
+  for_each   = data.github_team.maintainers
+  team_id    = each.value.id
+  repository = github_repository.alz_workload_template.name
+  permission = "maintain"
+}
+
+# ============================================================================
+# Repository Settings - Additional Configuration
+# ============================================================================
+# Note: Conversation resolution requirements are managed through branch protection
+# rulesets and cannot be set directly via the repository resource in the current
+# GitHub provider version. This must be configured manually through the GitHub UI
+# or may be available in future provider versions.
