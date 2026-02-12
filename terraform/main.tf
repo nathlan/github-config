@@ -123,3 +123,95 @@ resource "github_repository_ruleset" "main_branch_protection" {
     # }
   }
 }
+
+# ============================================================================
+# ALZ Workload Template Repository Configuration
+# ============================================================================
+# This section manages the alz-workload-template repository, ensuring it is
+# properly configured as a GitHub template repository for creating new
+# workload repositories in the ALZ vending system.
+#
+# CRITICAL: This repository ALREADY EXISTS and is imported via imports.tf
+
+resource "github_repository" "alz_workload_template" {
+  name        = "alz-workload-template"
+  description = "Template repository for ALZ workload repositories with pre-configured Terraform workflows"
+  visibility  = "public"
+
+  # CRITICAL: Mark as template repository
+  # This enables the "Use this template" button and allows the ALZ vending
+  # system to create new repositories from this template via Terraform
+  is_template = true
+
+  # Repository features
+  has_issues   = true
+  has_projects = false
+  has_wiki     = false
+
+  # Merge settings - aligned with ALZ standards
+  allow_squash_merge     = true
+  allow_merge_commit     = false
+  allow_rebase_merge     = true
+  allow_auto_merge       = false
+  delete_branch_on_merge = true
+
+  # Security settings
+  vulnerability_alerts = true
+
+  # Topics for discoverability
+  topics = [
+    "azure",
+    "terraform",
+    "template",
+    "landing-zone",
+    "alz"
+  ]
+
+  lifecycle {
+    # Prevent accidental deletion of the template repository
+    prevent_destroy = true
+  }
+}
+
+# Branch protection ruleset for alz-workload-template
+resource "github_repository_ruleset" "alz_workload_template_main_protection" {
+  name        = "Protect main branch"
+  repository  = github_repository.alz_workload_template.name
+  target      = "branch"
+  enforcement = "active"
+
+  # Apply to main branch
+  conditions {
+    ref_name {
+      include = ["refs/heads/main"]
+      exclude = []
+    }
+  }
+
+  # Bypass actors - allow repository admins to bypass for critical updates
+  bypass_actors {
+    actor_id    = 5 # Repository admin role
+    actor_type  = "RepositoryRole"
+    bypass_mode = "pull_request"
+  }
+
+  rules {
+    # Prevent deletion of the main branch
+    deletion = true
+
+    # Prevent force pushes
+    non_fast_forward = true
+
+    # Require pull requests before merging
+    pull_request {
+      required_approving_review_count   = 1
+      dismiss_stale_reviews_on_push     = true
+      require_code_owner_review         = false
+      require_last_push_approval        = false
+      required_review_thread_resolution = false
+    }
+
+    # Require linear history (no merge commits from branches)
+    required_linear_history = false
+  }
+}

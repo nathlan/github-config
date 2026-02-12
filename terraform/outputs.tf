@@ -28,3 +28,19 @@ output "repository_count" {
   description = "Number of repositories created"
   value       = length(github_repository.repos)
 }
+
+# ALZ Workload Template Repository Outputs
+output "alz_workload_template_name" {
+  description = "Name of the ALZ workload template repository"
+  value       = github_repository.alz_workload_template.name
+}
+
+output "alz_workload_template_url" {
+  description = "URL of the ALZ workload template repository"
+  value       = github_repository.alz_workload_template.html_url
+}
+
+output "alz_workload_template_is_template" {
+  description = "Whether the repository is marked as a template"
+  value       = github_repository.alz_workload_template.is_template
+}
