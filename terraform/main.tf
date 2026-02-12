@@ -131,8 +131,7 @@ resource "github_repository_ruleset" "main_branch_protection" {
 # properly configured as a GitHub template repository for creating new
 # workload repositories in the ALZ vending system.
 #
-# CRITICAL: This repository ALREADY EXISTS. It must be imported before apply:
-#   terraform import github_repository.alz_workload_template alz-workload-template
+# CRITICAL: This repository ALREADY EXISTS and is imported via imports.tf
 
 resource "github_repository" "alz_workload_template" {
   name        = "alz-workload-template"
@@ -171,5 +170,48 @@ resource "github_repository" "alz_workload_template" {
   lifecycle {
     # Prevent accidental deletion of the template repository
     prevent_destroy = true
+  }
+}
+
+# Branch protection ruleset for alz-workload-template
+resource "github_repository_ruleset" "alz_workload_template_main_protection" {
+  name        = "Protect main branch"
+  repository  = github_repository.alz_workload_template.name
+  target      = "branch"
+  enforcement = "active"
+
+  # Apply to main branch
+  conditions {
+    ref_name {
+      include = ["refs/heads/main"]
+      exclude = []
+    }
+  }
+
+  # Bypass actors - allow repository admins to bypass for critical updates
+  bypass_actors {
+    actor_id    = 5 # Repository admin role
+    actor_type  = "RepositoryRole"
+    bypass_mode = "pull_request"
+  }
+
+  rules {
+    # Prevent deletion of the main branch
+    deletion = true
+
+    # Prevent force pushes
+    non_fast_forward = true
+
+    # Require pull requests before merging
+    pull_request {
+      required_approving_review_count   = 1
+      dismiss_stale_reviews_on_push     = true
+      require_code_owner_review         = false
+      require_last_push_approval        = false
+      required_review_thread_resolution = false
+    }
+
+    # Require linear history (no merge commits from branches)
+    required_linear_history = false
   }
 }
