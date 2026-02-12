@@ -123,3 +123,53 @@ resource "github_repository_ruleset" "main_branch_protection" {
     # }
   }
 }
+
+# ============================================================================
+# ALZ Workload Template Repository Configuration
+# ============================================================================
+# This section manages the alz-workload-template repository, ensuring it is
+# properly configured as a GitHub template repository for creating new
+# workload repositories in the ALZ vending system.
+#
+# CRITICAL: This repository ALREADY EXISTS. It must be imported before apply:
+#   terraform import github_repository.alz_workload_template alz-workload-template
+
+resource "github_repository" "alz_workload_template" {
+  name        = "alz-workload-template"
+  description = "Template repository for ALZ workload repositories with pre-configured Terraform workflows"
+  visibility  = "public"
+
+  # CRITICAL: Mark as template repository
+  # This enables the "Use this template" button and allows the ALZ vending
+  # system to create new repositories from this template via Terraform
+  is_template = true
+
+  # Repository features
+  has_issues   = true
+  has_projects = false
+  has_wiki     = false
+
+  # Merge settings - aligned with ALZ standards
+  allow_squash_merge     = true
+  allow_merge_commit     = false
+  allow_rebase_merge     = true
+  allow_auto_merge       = false
+  delete_branch_on_merge = true
+
+  # Security settings
+  vulnerability_alerts = true
+
+  # Topics for discoverability
+  topics = [
+    "azure",
+    "terraform",
+    "template",
+    "landing-zone",
+    "alz"
+  ]
+
+  lifecycle {
+    # Prevent accidental deletion of the template repository
+    prevent_destroy = true
+  }
+}
