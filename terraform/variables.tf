@@ -11,9 +11,9 @@ variable "github_organization" {
 variable "repositories" {
   description = "List of repositories to create and manage"
   type = list(object({
-    name                                          = string
-    description                                   = string
-    visibility                                    = string
+    name                                              = string
+    description                                       = string
+    visibility                                        = string
     branch_protection_required_approving_review_count = number
   }))
 
@@ -55,31 +55,8 @@ variable "enable_copilot_pr_from_actions" {
   default     = true
 }
 
-# GitHub App Authentication Variables
-# These are mapped from GitHub secrets/variables in the CI/CD workflow:
-# - GH_CONFIG_APP_ID → GITHUB_APP_ID
-# - GH_CONFIG_INSTALLATION_ID → GITHUB_APP_INSTALLATION_ID
-# - GH_CONFIG_PRIVATE_KEY → GITHUB_APP_PEM_FILE
-#
-# The provider reads these environment variables automatically when app_auth {} is used
-
-variable "app_id" {
-  description = "GitHub App ID for authentication. Set via GITHUB_APP_ID environment variable (mapped from GH_CONFIG_APP_ID in workflow)."
-  type        = string
-  default     = ""
-  sensitive   = false
-}
-
-variable "app_installation_id" {
-  description = "GitHub App Installation ID for authentication. Set via GITHUB_APP_INSTALLATION_ID environment variable (mapped from GH_CONFIG_INSTALLATION_ID in workflow)."
-  type        = string
-  default     = ""
-  sensitive   = false
-}
-
-variable "app_pem_file" {
-  description = "Path to GitHub App private key PEM file or PEM content. Set via GITHUB_APP_PEM_FILE environment variable (mapped from GH_CONFIG_PRIVATE_KEY in workflow)."
-  type        = string
-  default     = ""
-  sensitive   = true
+variable "manage_copilot_firewall_variable" {
+  description = "Create COPILOT_AGENT_FIREWALL_ALLOW_LIST_ADDITIONS repository variable. Requires GitHub App with 'Actions: Read and write' permission."
+  type        = bool
+  default     = true
 }
