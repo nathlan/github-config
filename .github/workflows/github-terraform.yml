@@ -23,14 +23,16 @@ on:
         options:
           - plan
           - apply
-  schedule:
-    # Daily drift detection at 8 AM UTC
-    - cron: '0 8 * * *'
-
 env:
-  TF_VERSION: '1.9.0'
-  TF_WORKING_DIR: 'terraform'
-  GITHUB_ORGANIZATION: 'nathlan'
+  TF_CLOUD_ORGANIZATION: "nathanjnorris-org"
+  TF_API_TOKEN: "${{ secrets.HCP_TF_API_TOKEN }}"
+  TF_WORKSPACE: "agentic-platform"
+  TF_VERSION: "latest"
+  CONFIG_DIRECTORY: "terraform"
+  GITHUB_ORG: "nathlan"
+  GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
+  GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
+  GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
 
 permissions:
   contents: read
@@ -44,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ${{ env.TF_WORKING_DIR }}
+        working-directory: ${{ env.CONFIG_DIRECTORY }}
     
     steps:
       - name: Checkout Repository
@@ -111,7 +113,7 @@ jobs:
             #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
             #### TFLint 🔍\`${{ steps.tflint.outcome }}\`
             
-            *Pusher: @${{ github.actor }}, Working Directory: \`${{ env.TF_WORKING_DIR }}\`*`;
+            *Pusher: @${{ github.actor }}, Working Directory: \`${{ env.CONFIG_DIRECTORY }}\`*`;
             
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -133,7 +135,7 @@ jobs:
     needs: validate
     defaults:
       run:
-        working-directory: ${{ env.TF_WORKING_DIR }}
+        working-directory: ${{ env.CONFIG_DIRECTORY }}
     
     steps:
       - name: Checkout Repository
@@ -143,7 +145,7 @@ jobs:
         id: checkov
         uses: bridgecrewio/checkov-action@d25e9d386a2e2e8a4ae33bd2d2fa7f3b3e0c5e4a # v12.2897.0
         with:
-          directory: ${{ env.TF_WORKING_DIR }}
+          directory: ${{ env.CONFIG_DIRECTORY }}
           framework: terraform
           output_format: cli,sarif
           output_file_path: console,results.sarif
@@ -178,7 +180,6 @@ jobs:
             })
 
   # Job 3: Terraform Plan
-  plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
     needs: [validate, security]
@@ -186,14 +187,12 @@ jobs:
       name: github-admin-plan
     defaults:
       run:
-        working-directory: ${{ env.TF_WORKING_DIR }}
+        working-directory: ${{ env.CONFIG_DIRECTORY }}
     outputs:
       plan_outcome: ${{ steps.plan.outcome }}
       has_changes: ${{ steps.plan.outputs.exitcode == '2' }}
     
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.1.1
+
       
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
@@ -245,9 +244,8 @@ jobs:
         with:
           name: terraform-plan
           path: |
-            ${{ env.TF_WORKING_DIR }}/tfplan
-            ${{ env.TF_WORKING_DIR }}/plan_output.txt
-            ${{ env.TF_WORKING_DIR }}/.terraform.lock.hcl
+            ${{ env.CONFIG_DIRECTORY }}/github.tfplan
+            ${{ env.CONFIG_DIRECTORY }}/.terraform.lock.hcl
           retention-days: 30
           if-no-files-found: error
       
@@ -267,7 +265,10 @@ jobs:
             if (planExitCode === '1') {
               planStatus = '❌ Plan failed';
             } else if (planExitCode === '2') {
-              planStatus = '📝 Changes detected';
+              planStatus = 'Changes detected';
+              planOutput = fs.readFileSync('${{ env.CONFIG_DIRECTORY }}/plan_output.txt', 'utf8');
+            } else {
+              planOutput = fs.readFileSync('${{ env.CONFIG_DIRECTORY }}/plan_output.txt', 'utf8');
             }
             
             const output = `#### Terraform Plan ${planStatus}
@@ -278,9 +279,12 @@ jobs:
             ${planOutput.slice(0, 60000)}
             \`\`\`
             
-            </details>
+            </details>`;
+            }
             
-            *Pusher: @${{ github.actor }}, Working Directory: \`${{ env.TF_WORKING_DIR }}\`, Workflow: \`${{ github.workflow }}\`*`;
+            output += `
+            
+            *Pusher: @${{ github.actor }}, Working Directory: \`${{ env.CONFIG_DIRECTORY }}\`, Workflow: \`${{ github.workflow }}\`*`;
             
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -294,6 +298,85 @@ jobs:
         run: |
           echo "::error::Terraform plan failed. Please review the errors above."
           exit 1
+  terraform-cloud-plan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.3.2
+        id: upload
+        with:
+          workspace: ${{ env.TF_WORKSPACE }}
+          directory: ${{ env.CONFIG_DIRECTORY }}
+          speculative: true
+
+      - uses: hashicorp/tfc-workflows-github/actions/create-run@v1.3.2
+        id: run
+        ## run may fail, if so continue to output PR comment
+        ## step.terraform-cloud-check-run-status will fail job after pr comment is created/updated.
+        continue-on-error: true
+        with:
+          workspace: ${{ env.TF_WORKSPACE }}
+          configuration_version: ${{ steps.upload.outputs.configuration_version_id }}
+          plan_only: true
+          ## OPTIONAL: set your own message for run. A default message will be defined for you.
+          ## Example:
+          # message: "Triggered From GitHub Actions CI ${{ github.sha }}"
+
+      - uses: hashicorp/tfc-workflows-github/actions/plan-output@v1.3.2
+        id: plan-output
+        with:
+          plan: ${{ steps.run.outputs.plan_id }}
+
+      ## REQUIRED: Workflow permissions: `Read and write permissions`
+      ## GITHUB_TOKEN is the built in token provided by GitHub Actions. It will need to be set to "permissive" in your repository settings
+      ## More information can be found here: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository#setting-the-permissions-of-the-github_token-for-your-repository
+      - uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // 1. Retrieve existing bot comments for the PR
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            })
+            const botComment = comments.find(comment => {
+              return comment.user.type === 'Bot' && comment.body.includes('HCP Terraform Plan Output')
+            })
+            const output = `#### HCP Terraform Plan Output
+               \`\`\`\n
+               Plan: ${{ steps.plan-output.outputs.add }} to add, ${{ steps.plan-output.outputs.change }} to change, ${{ steps.plan-output.outputs.destroy }} to destroy.
+               \`\`\`
+               [HCP Terraform Plan](${{ steps.run.outputs.run_link }})
+               `
+            // 3. If we have a comment, update it, otherwise create a new one
+            if (botComment) {
+              github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: output
+              })
+            } else {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: output
+              })
+            }
+
+        ## Check Run Status, if not planned_and_finished fail the job
+      - id: terraform-cloud-check-run-status
+        if: ${{ steps.run.outputs.run_status != 'planned_and_finished'}}
+        run: |
+          echo "HCP Terraform Run Failed or Requires Further Attention"
+          echo "Run Status: '${{ steps.run.outputs.run_status }}'"
+          echo "${{ steps.run.outputs.run_link }}"
+          exit 1
 
   # Job 4: Terraform Apply (Production Deployment)
   apply:
@@ -304,132 +387,32 @@ jobs:
       (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.terraform_action == 'apply') ||
       (github.event_name == 'schedule')
-    environment:
-      name: github-admin
-      url: https://github.com/${{ env.GITHUB_ORGANIZATION }}
-    defaults:
-      run:
-        working-directory: ${{ env.TF_WORKING_DIR }}
     
     steps:
       - name: Checkout Repository
         uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.1.1
       
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+          - uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.3.2
+        id: upload
         with:
-          terraform_version: ${{ env.TF_VERSION }}
-      
-      - name: Generate GitHub App Token
-        id: app-token
-        uses: actions/create-github-app-token@d3ccb9bb9e8593f7e2e6e6c4d86c0163fb56a77d # v1.11.2
-        with:
-          app-id: ${{ vars.GH_CONFIG_APP_ID }}
-          private-key: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
-          owner: ${{ env.GITHUB_ORGANIZATION }}
-      
-      - name: Terraform Init
-        env:
-          GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
-          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
-          GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
-        run: terraform init
-      
-      - name: Download Plan Artifact
-        if: github.event_name != 'schedule'
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
-        with:
-          name: terraform-plan
-          path: ${{ env.TF_WORKING_DIR }}
-      
-      - name: Terraform Apply
-        id: apply
-        env:
-          GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
-          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
-          GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
-        run: |
-          if [ "${{ github.event_name }}" == "schedule" ]; then
-            echo "Running drift detection..."
-            terraform plan \
-              -var="github_organization=${{ env.GITHUB_ORGANIZATION }}" \
-              -detailed-exitcode
-          else
-            echo "Applying saved plan..."
-            terraform apply -auto-approve tfplan
-          fi
-      
-      - name: Create Deployment Summary
-        if: success() && github.event_name != 'schedule'
-        run: |
-          echo "## Terraform Apply Successful ✅" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Organization:** ${{ env.GITHUB_ORGANIZATION }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Working Directory:** ${{ env.TF_WORKING_DIR }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Terraform Version:** ${{ env.TF_VERSION }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Workflow Run:** [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
-      
-      - name: Report Drift Detection
-        if: github.event_name == 'schedule'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          script: |
-            const applyExitCode = '${{ steps.apply.outcome }}';
-            
-            if (applyExitCode === 'failure') {
-              // Drift detected
-              core.warning('⚠️ Drift detected in GitHub infrastructure!');
-              
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: `🔍 Drift Detected: GitHub Infrastructure - ${new Date().toISOString().split('T')[0]}`,
-                body: `## Drift Detection Report
-                
-                Automated drift detection has identified changes in the GitHub infrastructure that differ from the Terraform state.
-                
-                **Organization:** ${{ env.GITHUB_ORGANIZATION }}
-                **Detection Date:** ${new Date().toISOString()}
-                **Workflow Run:** [View Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-                
-                ### Next Steps
-                1. Review the workflow logs to identify what has drifted
-                2. Determine if the drift is expected or requires remediation
-                3. Update Terraform configuration if the manual changes should be codified
-                4. Or reapply Terraform to revert manual changes
-                
-                ### Common Causes
-                - Manual changes made directly in GitHub UI
-                - Changes made by other automation tools
-                - Resources created/modified outside Terraform
-                
-                See [TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) for more information.`,
-                labels: ['drift-detection', 'terraform', 'infrastructure']
-              });
-            } else {
-              core.info('✅ No drift detected - infrastructure matches Terraform state');
-            }
+          workspace: ${{ env.TF_WORKSPACE }}
+          directory: ${{ env.CONFIG_DIRECTORY }}
 
-  # Job 5: Drift Detection Report (runs only on schedule)
-  drift-summary:
-    name: Drift Detection Summary
-    runs-on: ubuntu-latest
-    needs: apply
-    if: always() && github.event_name == 'schedule'
-    
-    steps:
-      - name: Create Drift Summary
-        run: |
-          echo "## Daily Drift Detection 🔍" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Organization:** ${{ env.GITHUB_ORGANIZATION }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Date:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ "${{ needs.apply.result }}" == "success" ]; then
-            echo "✅ **Status:** No drift detected" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ **Status:** Drift detected - Issue created" >> $GITHUB_STEP_SUMMARY
-          fi
+      - name: Create apply run in Terraform Cloud
+        uses: hashicorp/tfc-workflows-github/actions/create-run@v1.3.2
+        id: create-run
+        with:
+          workspace: ${{ env.TF_WORKSPACE }}
+          configuration_version: ${{ steps.upload.outputs.configuration_version_id }}
+        env:
+          GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
+          GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
+
+      - name: Terraform Apply
+        uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.3.2
+        id: apply
+        if: ${{ fromJSON(steps.create-run.outputs.payload).data.attributes.actions.IsConfirmable }}
+        with:
+          run: ${{ steps.create-run.outputs.run_id }}
+          comment: "Apply Run from GitHub Actions CI ${{ github.sha }}"
