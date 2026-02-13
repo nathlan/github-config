@@ -9,11 +9,11 @@ variable "github_org" {
 }
 
 variable "github_app_id" {
-  type = number
+  type = string
 }
 
 variable "github_app_installation_id" {
-  type = number
+  type = string
 }
 
 variable "github_app_pem_file" {
