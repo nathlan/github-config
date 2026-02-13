@@ -19,11 +19,6 @@ output "copilot_firewall_allowlist" {
   value       = var.copilot_firewall_allowlist
 }
 
-output "organization" {
-  description = "The GitHub organization"
-  value       = var.github_org
-}
-
 output "repository_count" {
   description = "Number of repositories created"
   value       = length(github_repository.repos)
