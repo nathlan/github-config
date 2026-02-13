@@ -1,1 +1,4 @@
-# Data sources would go here if needed
+# Data source for platform-engineering team
+data "github_team" "platform_engineering" {
+  slug = "platform-engineering"
+}
