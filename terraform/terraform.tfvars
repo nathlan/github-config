@@ -5,6 +5,12 @@ repositories = [
     description                                       = "Example repository created with Terraform"
     visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
+  },
+  {
+    name                                              = "alz-prod-api-repo"
+    description                                       = "ALZ workload repository for example-api-prod"
+    visibility                                        = "private"
+    branch_protection_required_approving_review_count = 1
   }
   # Add more repositories here:
   # {
