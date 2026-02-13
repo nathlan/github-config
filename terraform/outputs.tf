@@ -57,6 +57,6 @@ output "alz_prod_api_repo" {
     http_clone_url       = github_repository.alz_prod_api_repo.http_clone_url
     default_branch       = "main"
     branch_protection_id = github_repository_ruleset.alz_prod_api_repo_main_protection.ruleset_id
-    team_access          = "platform-engineering: admin"
+    team_access          = "${data.github_team.platform_engineering.slug}: ${github_team_repository.alz_prod_api_repo_platform_engineering.permission}"
   }
 }
