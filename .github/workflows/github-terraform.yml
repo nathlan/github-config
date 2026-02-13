@@ -25,6 +25,10 @@ on:
           - apply
 env:
   CONFIG_DIRECTORY: "terraform"
+  GITHUB_ORG: "nathlan"
+  GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
+  GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
+  GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
   TF_CLOUD_ORGANIZATION: "nathanjnorris-org"
   TF_API_TOKEN: "${{ secrets.HCP_TF_API_TOKEN }}"
   TF_WORKSPACE: "agentic-platform"
