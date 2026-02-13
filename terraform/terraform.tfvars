@@ -1,6 +1,8 @@
 # Example terraform.tfvars file
 # Copy this to terraform.tfvars and customize with your values
 
+github_org = "nathlan"
+
 # Define repositories as a list of objects
 repositories = [
   {
