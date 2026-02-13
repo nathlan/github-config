@@ -24,12 +24,12 @@ on:
           - plan
           - apply
 env:
+  CONFIG_DIRECTORY: "terraform"
   TF_CLOUD_ORGANIZATION: "nathanjnorris-org"
   TF_API_TOKEN: "${{ secrets.HCP_TF_API_TOKEN }}"
   TF_WORKSPACE: "agentic-platform"
   TF_VERSION: "latest"
-  CONFIG_DIRECTORY: "terraform"
-  GITHUB_ORG: "nathlan"
+  TF_VAR_GITHUB_ORG: "nathlan"
   TF_VAR_GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
   TF_VAR_GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
   TF_VAR_GITHUB_APP_PEM_FILE: '"${{ secrets.GH_CONFIG_PRIVATE_KEY }}"'
@@ -63,18 +63,10 @@ jobs:
       
       - name: Terraform Init
         id: init
-        env:
-          GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
-          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
-          GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: terraform init -backend=false
       
       - name: Terraform Validate
         id: validate
-        env:
-          GITHUB_APP_ID: ${{ vars.GH_CONFIG_APP_ID }}
-          GITHUB_APP_INSTALLATION_ID: ${{ vars.GH_CONFIG_INSTALLATION_ID }}
-          GITHUB_APP_PEM_FILE: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
         run: terraform validate -no-color
       
       - name: Setup TFLint
