@@ -6,14 +6,18 @@ resource "github_repository" "repos" {
   description = each.value.description
   visibility  = each.value.visibility
 
+  # Create from template repository
+  template {
+    owner                = var.github_owner
+    repository           = "alz-workload-template"
+    include_all_branches = false
+  }
+
   # Enable features
   has_issues      = true
   has_discussions = false
   has_projects    = true
   has_wiki        = true
-
-  # Auto-initialize the repository with a README
-  auto_init = true
 
   # Merge settings
   allow_merge_commit     = true
