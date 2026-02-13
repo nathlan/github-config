@@ -44,3 +44,19 @@ output "alz_workload_template_is_template" {
   description = "Whether the repository is marked as a template"
   value       = github_repository.alz_workload_template.is_template
 }
+
+# ALZ Workload Repository Outputs
+output "alz_prod_api_repo" {
+  description = "Details of the alz-prod-api-repo workload repository"
+  value = {
+    id                   = github_repository.alz_prod_api_repo.repo_id
+    name                 = github_repository.alz_prod_api_repo.name
+    full_name            = github_repository.alz_prod_api_repo.full_name
+    html_url             = github_repository.alz_prod_api_repo.html_url
+    ssh_clone_url        = github_repository.alz_prod_api_repo.ssh_clone_url
+    http_clone_url       = github_repository.alz_prod_api_repo.http_clone_url
+    default_branch       = "main"
+    branch_protection_id = github_repository_ruleset.alz_prod_api_repo_main_protection.ruleset_id
+    team_access          = "platform-engineering: admin"
+  }
+}
