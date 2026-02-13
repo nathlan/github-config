@@ -1,11 +1,5 @@
 variable "github_org" {
-  description = "The GitHub organization name"
-  type        = string
-
-  validation {
-    condition     = length(var.github_org) > 0
-    error_message = "The github_org value must not be empty."
-  }
+  type = string
 }
 
 variable "github_app_id" {
