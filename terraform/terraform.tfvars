@@ -12,7 +12,7 @@ template_repositories = [
     collaborators = [
       {
         username   = "nathanjnorris"
-        permission = "owner"
+        permission = "admin"
       }
     ]
     # Optional: Team access with permissions
@@ -47,7 +47,7 @@ non_template_repositories = [
     collaborators = [
       {
         username   = "nathanjnorris"
-        permission = "owner"
+        permission = "admin"
       }
     ]
     teams = [
@@ -65,7 +65,7 @@ non_template_repositories = [
     collaborators = [
       {
         username   = "nathanjnorris"
-        permission = "owner"
+        permission = "admin"
       }
     ]
     teams = [
