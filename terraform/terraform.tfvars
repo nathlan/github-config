@@ -29,6 +29,13 @@ template_repositories = [
     visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
     # No collaborators or teams specified - using defaults (empty lists)
+  },
+  {
+    name                                              = "client-demo-test"
+    description                                       = "Client demo test repository"
+    visibility                                        = "public"
+    branch_protection_required_approving_review_count = 1
+    # No collaborators or teams specified - using defaults (empty lists)
   }
   # Add more template-based repositories here
 ]
