@@ -12,7 +12,7 @@ template_repositories = [
     collaborators = [
       {
         username   = "nathanjnorris"
-        permission = "admin"
+        permission = "maintain"
       }
     ]
     # Optional: Team access with permissions
@@ -47,7 +47,7 @@ non_template_repositories = [
     collaborators = [
       {
         username   = "nathanjnorris"
-        permission = "admin"
+        permission = "maintain"
       }
     ]
     teams = [
@@ -65,7 +65,7 @@ non_template_repositories = [
     collaborators = [
       {
         username   = "nathanjnorris"
-        permission = "admin"
+        permission = "maintain"
       }
     ]
     teams = [
@@ -77,6 +77,10 @@ non_template_repositories = [
   }
   # Add more non-template repositories here
 ]
+
+# ============================================================================
+#Common Settings
+# ============================================================================
 
 # Copilot firewall allowlist - these domains will be accessible by the Copilot agent
 copilot_firewall_allowlist = [
