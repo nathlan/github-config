@@ -1,24 +1,81 @@
-# Define repositories as a list of objects
-repositories = [
+# ============================================================================
+# Template-based Repositories
+# ============================================================================
+# Repositories created from alz-workload-template with pre-configured workflows
+template_repositories = [
   {
     name                                              = "example-repo"
     description                                       = "Example repository created with Terraform"
     visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
+    # Optional: Direct user collaborators with permissions
+    collaborators = [
+      {
+        username   = "nathanjnorris"
+        permission = "admin"
+      }
+    ]
+    # Optional: Team access with permissions
+    teams = [
+      {
+        team_slug  = "platform-engineering"
+        permission = "admin"
+      }
+    ]
   },
   {
     name                                              = "alz-prod-api-repo"
     description                                       = "ALZ workload repository for example-api-prod"
     visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
+    # No collaborators or teams specified - using defaults (empty lists)
   }
-  # Add more repositories here:
-  # {
-  #   name        = "another-repo"
-  #   description = "Another example repository"
-  #   visibility  = "private"
-  #   branch_protection_required_approving_review_count = 1
-  # }
+  # Add more template-based repositories here
+]
+
+# ============================================================================
+# Non-template Repositories
+# ============================================================================
+# Repositories initialized with README only (no template files)
+non_template_repositories = [
+  {
+    name                                              = "github-config"
+    description                                       = "GitHub repository configuration managed with Terraform"
+    visibility                                        = "public"
+    branch_protection_required_approving_review_count = 1
+    # Optional: Grant platform team admin access
+    collaborators = [
+      {
+        username   = "nathanjnorris"
+        permission = "admin"
+      }
+    ]
+    teams = [
+      {
+        team_slug  = "platform-engineering"
+        permission = "admin"
+      }
+    ]
+  },
+  {
+    name                                              = "shared-assets"
+    description                                       = "Shared assets and resources"
+    visibility                                        = "public"
+    branch_protection_required_approving_review_count = 1
+    collaborators = [
+      {
+        username   = "nathanjnorris"
+        permission = "admin"
+      }
+    ]
+    teams = [
+      {
+        team_slug  = "platform-engineering"
+        permission = "admin"
+      }
+    ]
+  }
+  # Add more non-template repositories here
 ]
 
 # Copilot firewall allowlist - these domains will be accessible by the Copilot agent

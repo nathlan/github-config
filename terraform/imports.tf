@@ -7,10 +7,22 @@ import {
   id = "alz-workload-template"
 }
 
-# Note: The branch protection ruleset for alz-workload-template is new
-# and will be created, not imported. If it already exists, add an import
-# block with the format:
+# Import the existing github-config repository
+import {
+  to = github_repository.non_template_repos["github-config"]
+  id = "github-config"
+}
+
+# Import the existing shared-assets repository (if it exists)
+# Uncomment after the repository is created:
 # import {
-#   to = github_repository_ruleset.alz_workload_template_main_protection
-#   id = "alz-workload-template:<ruleset_id>"
+#   to = github_repository.non_template_repos["shared-assets"]
+#   id = "shared-assets"
+# }
+
+# Note: The branch protection rulesets are new and will be created, not imported.
+# If they already exist, add import blocks with the format:
+# import {
+#   to = github_repository_ruleset.main_branch_protection["repo-name"]
+#   id = "repo-name:<ruleset_id>"
 # }
