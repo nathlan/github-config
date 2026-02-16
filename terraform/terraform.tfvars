@@ -101,5 +101,4 @@ manage_copilot_firewall_variable = true
 # 1. Go to GitHub Organization Settings → GitHub Apps → source-repo-sync
 # 2. Or check the repository variable SOURCE_REPO_SYNC_APP_ID value
 # Set to the actual app ID number to enable bypass for branch protection
-# Example: source_repo_sync_app_id = 123456
-source_repo_sync_app_id = null # TODO: Replace with actual app ID
+source_repo_sync_app_id = 2791616
