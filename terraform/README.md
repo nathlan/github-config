@@ -1,14 +1,49 @@
 # GitHub Repository Terraform Configuration
 
-This Terraform configuration creates and manages multiple GitHub repositories with the following features:
+This Terraform configuration creates and manages multiple GitHub repositories with support for both template-based and non-template repositories, all with common organizational settings.
+
+## Overview
+
+This configuration supports two types of repositories:
+
+1. **Template-based Repositories**: Created from `alz-workload-template` with pre-configured workflows and structure
+2. **Non-template Repositories**: Initialized with README only, suitable for infrastructure repos or shared resources
+
+Both types receive **common organizational settings** including branch protection, Actions permissions, and Copilot firewall configuration.
 
 ## Resources Managed
 
-### Repository Configuration
-- **Repositories**: Creates multiple repositories in your GitHub organization with configurable settings
-- **Auto-initialization**: Repositories are created with an initial README
-- **Merge Settings**: Configures merge commit, squash merge, and rebase merge options
-- **Security**: Enables vulnerability alerts for dependencies
+### Repository Types
+
+#### Template-based Repositories
+- Created from `alz-workload-template` repository
+- Inherits all template files, workflows, and directory structure
+- Ideal for ALZ workload repositories requiring standardized setup
+- Example: Application workload repositories
+
+#### Non-template Repositories
+- Initialized with README.md only
+- No template files or pre-configured structure
+- Ideal for infrastructure-as-code repositories, shared assets, documentation
+- Examples: `github-config`, `shared-assets`
+
+### Common Settings Applied to All Repositories
+### Common Settings Applied to All Repositories
+
+- **Repository Features**:
+  - Issues: Enabled
+  - Projects: Enabled
+  - Wiki: Enabled
+  - Discussions: Disabled
+
+- **Merge Settings**: 
+  - All merge strategies enabled (merge commit, squash, rebase)
+  - Auto-merge: Enabled
+  - Delete branch on merge: Enabled
+  - Squash merge commit title: PR_TITLE
+  - Squash merge commit message: PR_BODY
+
+- **Security**: Vulnerability alerts enabled for all repositories
 
 ### Branch Protection
 - **Main Branch Protection**: Implements a repository ruleset for the `main` branch with:
@@ -75,23 +110,32 @@ terraform init
 ```
 
 ### 2. Review and Customize Variables
-Edit the `terraform.tfvars` file with your values:
+Edit the `terraform.tfvars` file with your repository configurations:
 
 ```hcl
-github_organization = "your-org-name"
-
-repositories = [
+# Template-based repositories (using alz-workload-template)
+template_repositories = [
   {
-    name                                          = "my-first-repo"
-    description                                   = "My first repository"
-    visibility                                    = "private"
+    name                                              = "my-workload-repo"
+    description                                       = "My workload repository from template"
+    visibility                                        = "public"
+    branch_protection_required_approving_review_count = 1
+  }
+]
+
+# Non-template repositories (initialized with README only)
+non_template_repositories = [
+  {
+    name                                              = "github-config"
+    description                                       = "GitHub repository configuration managed with Terraform"
+    visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
   },
   {
-    name                                          = "my-second-repo"
-    description                                   = "My second repository"
-    visibility                                    = "private"
-    branch_protection_required_approving_review_count = 2
+    name                                              = "shared-assets"
+    description                                       = "Shared assets and resources"
+    visibility                                        = "public"
+    branch_protection_required_approving_review_count = 1
   }
 ]
 
@@ -99,8 +143,7 @@ repositories = [
 copilot_firewall_allowlist = [
   "registry.terraform.io",
   "checkpoint-api.hashicorp.com",
-  "api0.prismacloud.io",
-  "custom-domain.example.com"
+  "api0.prismacloud.io"
 ]
 ```
 
@@ -134,8 +177,9 @@ After successful apply, Terraform will output:
 
 | Variable | Description | Type | Default | Required |
 |----------|-------------|------|---------|----------|
-| `github_organization` | GitHub organization name | string | - | Yes |
-| `repositories` | List of repository objects to create | list(object) | - | Yes |
+| `github_owner` | GitHub organization or user name | string | - | Yes |
+| `template_repositories` | List of template-based repository objects | list(object) | `[]` | No |
+| `non_template_repositories` | List of non-template repository objects | list(object) | `[]` | No |
 | `repositories[].name` | Repository name | string | - | Yes |
 | `repositories[].description` | Repository description | string | - | Yes |
 | `repositories[].visibility` | Repository visibility (public/private/internal) | string | - | Yes |
@@ -148,10 +192,12 @@ After successful apply, Terraform will output:
 
 | Output | Description |
 |--------|-------------|
-| `repositories` | Map of created repositories with details (ID, name, URLs, branch protection ID) |
+| `template_repositories` | Map of template-based repositories with details |
+| `non_template_repositories` | Map of non-template repositories with details |
+| `all_repositories` | Combined map of all repositories with type indicator |
 | `copilot_firewall_allowlist` | Configured allowlist domains |
-| `organization` | Organization name |
-| `repository_count` | Number of repositories created |
+| `repository_count` | Breakdown of repository counts (template, non-template, total) |
+| `alz_workload_template_*` | Details about the template repository |
 
 ## Security Considerations
 
@@ -201,6 +247,46 @@ After applying this Terraform configuration, you can verify the Copilot firewall
 1. Triggering a Copilot-generated PR from an Action
 2. Checking that Copilot can access Terraform Registry and other allowlisted domains
 3. Observing that connections to non-allowlisted domains are blocked and logged
+
+## Importing Existing Repositories
+
+If you have existing repositories that you want to manage with this Terraform configuration, you need to import them first.
+
+### Import Template-based Repository (Not Recommended)
+Template-based repositories should typically be created fresh from the template. Importing existing repositories as template-based is only for repositories already created from the template.
+
+### Import Non-template Repository (Recommended for Existing Repos)
+
+For existing repositories like `github-config` or `shared-assets`:
+
+```bash
+# Import existing repository
+terraform import 'github_repository.non_template_repos["github-config"]' github-config
+
+# Import another existing repository
+terraform import 'github_repository.non_template_repos["shared-assets"]' shared-assets
+```
+
+**Import blocks** are already configured in `imports.tf`:
+```hcl
+# Existing import for github-config
+import {
+  to = github_repository.non_template_repos["github-config"]
+  id = "github-config"
+}
+
+# Uncomment after shared-assets is created
+# import {
+#   to = github_repository.non_template_repos["shared-assets"]
+#   id = "shared-assets"
+# }
+```
+
+### After Importing
+
+1. Run `terraform plan` to see what changes Terraform will make
+2. Review the changes - they should primarily be settings alignment
+3. Run `terraform apply` to align the repository with your configuration
 
 ## Next Steps
 
