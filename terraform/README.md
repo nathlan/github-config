@@ -99,6 +99,10 @@ teams = [
   - Protection against force pushes
   - Stale review dismissal on new commits
   - Bypass permission for repository admins on pull requests
+  - **Optional**: Bypass permission for source-repo-sync app (configure via `source_repo_sync_app_id` variable)
+    - The source-repo-sync app syncs files from source repositories and creates PRs
+    - To enable, set the app ID in `terraform.tfvars`: `source_repo_sync_app_id = <app_id>`
+    - Find the app ID in Organization Settings → GitHub Apps → source-repo-sync
   - **Note**: Rulesets require GitHub Pro or public repositories. For private repos on free tier, use `github_branch_protection` instead.
 
 ### GitHub Actions & Copilot Configuration
@@ -255,6 +259,7 @@ After successful apply, Terraform will output:
 | `copilot_firewall_allowlist` | Additional domains for Copilot agent (consistent across all repos) | list(string) | See defaults | No |
 | `enable_copilot_pr_from_actions` | Allow Copilot to create PRs (applies to all repos) | bool | `true` | No |
 | `manage_copilot_firewall_variable` | Create Copilot firewall variable (requires GitHub App with Actions: Read and write permission) | bool | `true` | No |
+| `source_repo_sync_app_id` | GitHub App ID for source-repo-sync app to bypass branch protection. Set to null to disable. | number | `null` | No |
 
 ### Outputs
 
@@ -284,6 +289,7 @@ After successful apply, Terraform will output:
 3. **Branch Protection**: The ruleset allows repository admins to bypass protection on pull requests, which is necessary for automated workflows.
 4. **Copilot Firewall**: The allowlist extends (not replaces) the default allowed domains and is consistent across all repositories. Review the [Copilot allowlist reference](https://docs.github.com/en/copilot/reference/copilot-allowlist-reference) for defaults.
 5. **Multiple Repositories**: Each repository can have different branch protection settings, but Copilot firewall rules are shared across all repositories.
+6. **Source Repo Sync Bypass**: When `source_repo_sync_app_id` is configured, the source-repo-sync GitHub App can bypass branch protection for pull requests only. This is necessary for automated file syncing workflows. Direct pushes to main branch remain blocked.
 
 ### State Management
 This configuration uses local state by default. For production use or team collaboration, consider using remote state:
