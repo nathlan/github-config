@@ -370,7 +370,7 @@ resource "github_repository_ruleset" "alz_workload_template_main_protection" {
     content {
       actor_id    = var.source_repo_sync_app_id
       actor_type  = "Integration"
-      bypass_mode = "pull_request"
+      bypass_mode = "exempt"
     }
   }
 
