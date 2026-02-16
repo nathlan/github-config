@@ -14,32 +14,65 @@ variable "github_app_pem_file" {
   type = string
 }
 
-variable "repositories" {
-  description = "List of repositories to create and manage"
+variable "template_repositories" {
+  description = "List of repositories to create from alz-workload-template with common settings"
   type = list(object({
     name                                              = string
     description                                       = string
     visibility                                        = string
     branch_protection_required_approving_review_count = number
   }))
+  default = []
 
   validation {
     condition = alltrue([
-      for repo in var.repositories : can(regex("^[a-zA-Z0-9._-]+$", repo.name))
+      for repo in var.template_repositories : can(regex("^[a-zA-Z0-9._-]+$", repo.name))
     ])
     error_message = "Repository names can only contain alphanumeric characters, hyphens, underscores, and periods."
   }
 
   validation {
     condition = alltrue([
-      for repo in var.repositories : contains(["public", "private", "internal"], repo.visibility)
+      for repo in var.template_repositories : contains(["public", "private", "internal"], repo.visibility)
     ])
     error_message = "Repository visibility must be one of: public, private, or internal."
   }
 
   validation {
     condition = alltrue([
-      for repo in var.repositories : repo.branch_protection_required_approving_review_count >= 0 && repo.branch_protection_required_approving_review_count <= 6
+      for repo in var.template_repositories : repo.branch_protection_required_approving_review_count >= 0 && repo.branch_protection_required_approving_review_count <= 6
+    ])
+    error_message = "Required approving review count must be between 0 and 6."
+  }
+}
+
+variable "non_template_repositories" {
+  description = "List of repositories to create without template (auto_init with README) with common settings"
+  type = list(object({
+    name                                              = string
+    description                                       = string
+    visibility                                        = string
+    branch_protection_required_approving_review_count = number
+  }))
+  default = []
+
+  validation {
+    condition = alltrue([
+      for repo in var.non_template_repositories : can(regex("^[a-zA-Z0-9._-]+$", repo.name))
+    ])
+    error_message = "Repository names can only contain alphanumeric characters, hyphens, underscores, and periods."
+  }
+
+  validation {
+    condition = alltrue([
+      for repo in var.non_template_repositories : contains(["public", "private", "internal"], repo.visibility)
+    ])
+    error_message = "Repository visibility must be one of: public, private, or internal."
+  }
+
+  validation {
+    condition = alltrue([
+      for repo in var.non_template_repositories : repo.branch_protection_required_approving_review_count >= 0 && repo.branch_protection_required_approving_review_count <= 6
     ])
     error_message = "Required approving review count must be between 0 and 6."
   }

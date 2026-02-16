@@ -1,5 +1,8 @@
-# Define repositories as a list of objects
-repositories = [
+# ============================================================================
+# Template-based Repositories
+# ============================================================================
+# Repositories created from alz-workload-template with pre-configured workflows
+template_repositories = [
   {
     name                                              = "example-repo"
     description                                       = "Example repository created with Terraform"
@@ -12,13 +15,27 @@ repositories = [
     visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
   }
-  # Add more repositories here:
-  # {
-  #   name        = "another-repo"
-  #   description = "Another example repository"
-  #   visibility  = "private"
-  #   branch_protection_required_approving_review_count = 1
-  # }
+  # Add more template-based repositories here
+]
+
+# ============================================================================
+# Non-template Repositories
+# ============================================================================
+# Repositories initialized with README only (no template files)
+non_template_repositories = [
+  {
+    name                                              = "github-config"
+    description                                       = "GitHub repository configuration managed with Terraform"
+    visibility                                        = "public"
+    branch_protection_required_approving_review_count = 1
+  },
+  {
+    name                                              = "shared-assets"
+    description                                       = "Shared assets and resources"
+    visibility                                        = "public"
+    branch_protection_required_approving_review_count = 1
+  }
+  # Add more non-template repositories here
 ]
 
 # Copilot firewall allowlist - these domains will be accessible by the Copilot agent

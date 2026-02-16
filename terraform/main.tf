@@ -1,6 +1,9 @@
-# Create GitHub repositories
-resource "github_repository" "repos" {
-  for_each = { for repo in var.repositories : repo.name => repo }
+# ============================================================================
+# Template-based Repositories (using alz-workload-template)
+# ============================================================================
+
+resource "github_repository" "template_repos" {
+  for_each = { for repo in var.template_repositories : repo.name => repo }
 
   name        = each.value.name
   description = each.value.description
@@ -37,9 +40,65 @@ resource "github_repository" "repos" {
   topics = ["terraform-managed", "infrastructure-as-code"]
 }
 
-# Configure GitHub Actions permissions for each repository
-resource "github_actions_repository_permissions" "repos" {
-  for_each = github_repository.repos
+# ============================================================================
+# Non-template Repositories (auto_init with README only)
+# ============================================================================
+
+resource "github_repository" "non_template_repos" {
+  for_each = { for repo in var.non_template_repositories : repo.name => repo }
+
+  name        = each.value.name
+  description = each.value.description
+  visibility  = each.value.visibility
+
+  # Initialize with README (no template)
+  auto_init = true
+
+  # Enable features
+  has_issues      = true
+  has_discussions = false
+  has_projects    = true
+  has_wiki        = true
+
+  # Merge settings
+  allow_merge_commit     = true
+  allow_squash_merge     = true
+  allow_rebase_merge     = true
+  allow_auto_merge       = true
+  delete_branch_on_merge = true
+
+  # Squash merge settings
+  squash_merge_commit_title   = "PR_TITLE"
+  squash_merge_commit_message = "PR_BODY"
+
+  # Security settings
+  vulnerability_alerts = true
+
+  # Topics for better discoverability
+  topics = ["terraform-managed", "shared-resources"]
+}
+
+# ============================================================================
+# Common Settings for All Repositories
+# ============================================================================
+
+locals {
+  # Merge all repositories for common settings
+  all_repos = merge(
+    github_repository.template_repos,
+    github_repository.non_template_repos
+  )
+
+  # Merge repository configurations for branch protection
+  all_repo_configs = merge(
+    { for repo in var.template_repositories : repo.name => repo },
+    { for repo in var.non_template_repositories : repo.name => repo }
+  )
+}
+
+# Configure GitHub Actions permissions for all repositories
+resource "github_actions_repository_permissions" "all_repos" {
+  for_each = local.all_repos
 
   repository = each.value.name
 
@@ -54,7 +113,7 @@ resource "github_actions_repository_permissions" "repos" {
 # NOTE: Requires GitHub App with "Actions: Read and write" permission
 # If you get "403 Resource not accessible by integration" error, set manage_copilot_firewall_variable = false
 resource "github_actions_variable" "copilot_firewall_allowlist" {
-  for_each = var.manage_copilot_firewall_variable ? github_repository.repos : {}
+  for_each = var.manage_copilot_firewall_variable ? local.all_repos : {}
 
   repository    = each.value.name
   variable_name = "COPILOT_AGENT_FIREWALL_ALLOW_LIST_ADDITIONS"
@@ -62,8 +121,8 @@ resource "github_actions_variable" "copilot_firewall_allowlist" {
 }
 
 # Configure workflow permissions to allow GitHub Actions to create PRs
-resource "github_workflow_repository_permissions" "repos" {
-  for_each = github_repository.repos
+resource "github_workflow_repository_permissions" "all_repos" {
+  for_each = local.all_repos
 
   repository = each.value.name
 
@@ -76,12 +135,12 @@ resource "github_workflow_repository_permissions" "repos" {
   can_approve_pull_request_reviews = var.enable_copilot_pr_from_actions
 }
 
-# Create branch protection ruleset for main branch on each repository
+# Create branch protection ruleset for main branch on all repositories
 resource "github_repository_ruleset" "main_branch_protection" {
-  for_each = { for repo in var.repositories : repo.name => repo }
+  for_each = local.all_repo_configs
 
   name        = "Protect main branch"
-  repository  = github_repository.repos[each.key].name
+  repository  = local.all_repos[each.key].name
   target      = "branch"
   enforcement = "active"
 
