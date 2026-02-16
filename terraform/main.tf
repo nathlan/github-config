@@ -254,13 +254,13 @@ resource "github_repository_ruleset" "main_branch_protection" {
   }
 
   # Allow source-repo-sync app to bypass for PR creation
-  # This app syncs files from source repositories and creates PRs
+  # This app syncs files from source repositories and auto-merges PRs
   dynamic "bypass_actors" {
     for_each = var.source_repo_sync_app_id != null ? [1] : []
     content {
       actor_id    = var.source_repo_sync_app_id
       actor_type  = "Integration"
-      bypass_mode = "pull_request"
+      bypass_mode = "exempt"
     }
   }
 
