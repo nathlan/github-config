@@ -253,6 +253,13 @@ resource "github_repository_ruleset" "main_branch_protection" {
     bypass_mode = "pull_request"
   }
 
+  # Allow Copilot coding agent to bypass for PR creation
+  bypass_actors {
+    actor_id    = 198982749 # Copilot coding agent (GitHub App)
+    actor_type  = "Integration"
+    bypass_mode = "pull_request"
+  }
+
   rules {
     # Prevent deletion of the main branch
     deletion = true
@@ -349,6 +356,13 @@ resource "github_repository_ruleset" "alz_workload_template_main_protection" {
   bypass_actors {
     actor_id    = 5 # Repository admin role
     actor_type  = "RepositoryRole"
+    bypass_mode = "pull_request"
+  }
+
+  # Allow Copilot coding agent to bypass for PR creation
+  bypass_actors {
+    actor_id    = 198982749 # Copilot coding agent (GitHub App)
+    actor_type  = "Integration"
     bypass_mode = "pull_request"
   }
 
