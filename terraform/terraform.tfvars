@@ -95,3 +95,11 @@ enable_copilot_pr_from_actions = true
 # Manage Copilot firewall variable (requires GitHub App with Actions: Read and write permission)
 # Set to false if you get "403 Resource not accessible by integration" error
 manage_copilot_firewall_variable = true
+
+# Source Repo Sync App ID - GitHub App that syncs files from source repositories
+# To find the app ID:
+# 1. Go to GitHub Organization Settings → GitHub Apps → source-repo-sync
+# 2. Or check the repository variable SOURCE_REPO_SYNC_APP_ID value
+# Set to the actual app ID number to enable bypass for branch protection
+# Example: source_repo_sync_app_id = 123456
+source_repo_sync_app_id = null # TODO: Replace with actual app ID

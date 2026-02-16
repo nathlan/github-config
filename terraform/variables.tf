@@ -155,3 +155,9 @@ variable "manage_copilot_firewall_variable" {
   type        = bool
   default     = true
 }
+
+variable "source_repo_sync_app_id" {
+  description = "GitHub App ID for source-repo-sync app to bypass branch protection. This app syncs files from source repositories. Set to null to disable bypass."
+  type        = number
+  default     = null
+}

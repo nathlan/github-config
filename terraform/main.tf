@@ -253,11 +253,15 @@ resource "github_repository_ruleset" "main_branch_protection" {
     bypass_mode = "pull_request"
   }
 
-  # Allow Copilot coding agent to bypass for PR creation
-  bypass_actors {
-    actor_id    = 198982749 # Copilot coding agent (GitHub App)
-    actor_type  = "Integration"
-    bypass_mode = "pull_request"
+  # Allow source-repo-sync app to bypass for PR creation
+  # This app syncs files from source repositories and creates PRs
+  dynamic "bypass_actors" {
+    for_each = var.source_repo_sync_app_id != null ? [1] : []
+    content {
+      actor_id    = var.source_repo_sync_app_id
+      actor_type  = "Integration"
+      bypass_mode = "pull_request"
+    }
   }
 
   rules {
@@ -359,11 +363,15 @@ resource "github_repository_ruleset" "alz_workload_template_main_protection" {
     bypass_mode = "pull_request"
   }
 
-  # Allow Copilot coding agent to bypass for PR creation
-  bypass_actors {
-    actor_id    = 198982749 # Copilot coding agent (GitHub App)
-    actor_type  = "Integration"
-    bypass_mode = "pull_request"
+  # Allow source-repo-sync app to bypass for PR creation
+  # This app syncs files from source repositories and creates PRs
+  dynamic "bypass_actors" {
+    for_each = var.source_repo_sync_app_id != null ? [1] : []
+    content {
+      actor_id    = var.source_repo_sync_app_id
+      actor_type  = "Integration"
+      bypass_mode = "pull_request"
+    }
   }
 
   rules {
