@@ -94,7 +94,101 @@ locals {
     { for repo in var.template_repositories : repo.name => repo },
     { for repo in var.non_template_repositories : repo.name => repo }
   )
+
+  # Flatten collaborators for all repositories (template + non-template)
+  all_collaborators = merge(
+    {
+      for pair in flatten([
+        for repo in var.template_repositories : [
+          for collab in repo.collaborators : {
+            key        = "${repo.name}/${collab.username}"
+            repo       = repo.name
+            username   = collab.username
+            permission = collab.permission
+          }
+        ]
+      ]) : pair.key => pair
+    },
+    {
+      for pair in flatten([
+        for repo in var.non_template_repositories : [
+          for collab in repo.collaborators : {
+            key        = "${repo.name}/${collab.username}"
+            repo       = repo.name
+            username   = collab.username
+            permission = collab.permission
+          }
+        ]
+      ]) : pair.key => pair
+    }
+  )
+
+  # Flatten team access for all repositories (template + non-template)
+  all_team_access = merge(
+    {
+      for pair in flatten([
+        for repo in var.template_repositories : [
+          for team in repo.teams : {
+            key        = "${repo.name}/${team.team_slug}"
+            repo       = repo.name
+            team_slug  = team.team_slug
+            permission = team.permission
+          }
+        ]
+      ]) : pair.key => pair
+    },
+    {
+      for pair in flatten([
+        for repo in var.non_template_repositories : [
+          for team in repo.teams : {
+            key        = "${repo.name}/${team.team_slug}"
+            repo       = repo.name
+            team_slug  = team.team_slug
+            permission = team.permission
+          }
+        ]
+      ]) : pair.key => pair
+    }
+  )
 }
+
+# ============================================================================
+# Repository Access Management
+# ============================================================================
+
+# Grant direct user collaborator access to repositories
+resource "github_repository_collaborator" "collaborators" {
+  for_each = local.all_collaborators
+
+  repository = each.value.repo
+  username   = each.value.username
+  permission = each.value.permission
+
+  # Ensure repository exists before creating collaborator
+  depends_on = [
+    github_repository.template_repos,
+    github_repository.non_template_repos
+  ]
+}
+
+# Grant team access to repositories
+resource "github_team_repository" "team_access" {
+  for_each = local.all_team_access
+
+  repository = each.value.repo
+  team_id    = each.value.team_slug
+  permission = each.value.permission
+
+  # Ensure repository exists before creating team access
+  depends_on = [
+    github_repository.template_repos,
+    github_repository.non_template_repos
+  ]
+}
+
+# ============================================================================
+# GitHub Actions Configuration
+# ============================================================================
 
 # Configure GitHub Actions permissions for all repositories
 resource "github_actions_repository_permissions" "all_repos" {

@@ -28,7 +28,6 @@ Both types receive **common organizational settings** including branch protectio
 - Examples: `github-config`, `shared-assets`
 
 ### Common Settings Applied to All Repositories
-### Common Settings Applied to All Repositories
 
 - **Repository Features**:
   - Issues: Enabled
@@ -44,6 +43,54 @@ Both types receive **common organizational settings** including branch protectio
   - Squash merge commit message: PR_BODY
 
 - **Security**: Vulnerability alerts enabled for all repositories
+
+### Repository Access Management
+
+Both template-based and non-template repositories support fine-grained access control through:
+
+#### Direct User Collaborators
+Grant individual users direct access to repositories with specific permission levels:
+- **pull**: Read-only access (clone, pull)
+- **triage**: Read access + manage issues and PRs
+- **push**: Read/write access (push to non-protected branches)
+- **maintain**: Push access + manage repository settings (no access to sensitive/destructive actions)
+- **admin**: Full administrative access
+
+Collaborators are optional for each repository (defaults to empty list). Example:
+```hcl
+collaborators = [
+  {
+    username   = "bob"
+    permission = "maintain"
+  },
+  {
+    username   = "alice"
+    permission = "push"
+  }
+]
+```
+
+#### Team Access
+Grant entire GitHub teams access to repositories:
+- Uses the same permission levels as collaborators
+- Requires the team to already exist in the organization
+- Use the team slug (not display name) for team identification
+
+Team access is optional for each repository (defaults to empty list). Example:
+```hcl
+teams = [
+  {
+    team_slug  = "developers"
+    permission = "push"
+  },
+  {
+    team_slug  = "platform-engineering"
+    permission = "admin"
+  }
+]
+```
+
+**Note**: Both collaborators and teams can be specified for the same repository. Access permissions are additive - a user with access through both a team and direct collaborator will have the higher of the two permission levels.
 
 ### Branch Protection
 - **Main Branch Protection**: Implements a repository ruleset for the `main` branch with:
@@ -120,6 +167,20 @@ template_repositories = [
     description                                       = "My workload repository from template"
     visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
+    # Optional: Add direct user collaborators
+    collaborators = [
+      {
+        username   = "bob"
+        permission = "maintain"
+      }
+    ]
+    # Optional: Add team access
+    teams = [
+      {
+        team_slug  = "developers"
+        permission = "push"
+      }
+    ]
   }
 ]
 
@@ -130,12 +191,13 @@ non_template_repositories = [
     description                                       = "GitHub repository configuration managed with Terraform"
     visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
-  },
-  {
-    name                                              = "shared-assets"
-    description                                       = "Shared assets and resources"
-    visibility                                        = "public"
-    branch_protection_required_approving_review_count = 1
+    # Optional: Grant team access
+    teams = [
+      {
+        team_slug  = "platform-engineering"
+        permission = "admin"
+      }
+    ]
   }
 ]
 
@@ -184,6 +246,12 @@ After successful apply, Terraform will output:
 | `repositories[].description` | Repository description | string | - | Yes |
 | `repositories[].visibility` | Repository visibility (public/private/internal) | string | - | Yes |
 | `repositories[].branch_protection_required_approving_review_count` | Required PR approvals | number | - | Yes |
+| `repositories[].collaborators` | List of direct user collaborators with permissions | list(object) | `[]` | No |
+| `repositories[].collaborators[].username` | GitHub username | string | - | Yes (if collaborators specified) |
+| `repositories[].collaborators[].permission` | Access level (pull/triage/push/maintain/admin) | string | - | Yes (if collaborators specified) |
+| `repositories[].teams` | List of team access grants with permissions | list(object) | `[]` | No |
+| `repositories[].teams[].team_slug` | GitHub team slug | string | - | Yes (if teams specified) |
+| `repositories[].teams[].permission` | Access level (pull/triage/push/maintain/admin) | string | - | Yes (if teams specified) |
 | `copilot_firewall_allowlist` | Additional domains for Copilot agent (consistent across all repos) | list(string) | See defaults | No |
 | `enable_copilot_pr_from_actions` | Allow Copilot to create PRs (applies to all repos) | bool | `true` | No |
 | `manage_copilot_firewall_variable` | Create Copilot firewall variable (requires GitHub App with Actions: Read and write permission) | bool | `true` | No |
@@ -195,6 +263,9 @@ After successful apply, Terraform will output:
 | `template_repositories` | Map of template-based repositories with details |
 | `non_template_repositories` | Map of non-template repositories with details |
 | `all_repositories` | Combined map of all repositories with type indicator |
+| `repository_collaborators` | Map of all repository collaborators with access levels |
+| `repository_team_access` | Map of all team access grants to repositories |
+| `access_summary` | Summary counts of collaborators, teams, and repositories with access |
 | `copilot_firewall_allowlist` | Configured allowlist domains |
 | `repository_count` | Breakdown of repository counts (template, non-template, total) |
 | `alz_workload_template_*` | Details about the template repository |
@@ -293,10 +364,91 @@ import {
 After creating this repository with Terraform:
 
 1. **Clone the Repository**: Use the output clone URLs to clone the newly created repository
-2. **Set Up Workflows**: Create GitHub Actions workflows to utilize Copilot for automated PR creation
-3. **Configure Branch Protection Further**: Adjust branch protection settings as needed for your workflow
-4. **Add Collaborators/Teams**: Use additional Terraform resources to grant access to teams or individuals
+2. **Manage Access**: Configure collaborators and teams for fine-grained access control
+   - Add individual users with `collaborators` field
+   - Grant team access with `teams` field
+   - Review access summary in Terraform outputs
+3. **Set Up Workflows**: Create GitHub Actions workflows to utilize Copilot for automated PR creation
+4. **Configure Branch Protection Further**: Adjust branch protection settings as needed for your workflow
 5. **Import Existing Resources**: If this configuration needs to match an existing repository, use `terraform import`
+
+## Managing Repository Access
+
+### Permission Levels Explained
+
+GitHub repository permissions provide different levels of access:
+
+| Permission | Read | Issues/PRs | Push | Settings | Admin |
+|-----------|------|-----------|------|----------|-------|
+| `pull` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `triage` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `push` | ✅ | ✅ | ✅ (non-protected) | ❌ | ❌ |
+| `maintain` | ✅ | ✅ | ✅ | ⚠️ (some) | ❌ |
+| `admin` | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+### Adding Collaborators
+
+To add individual users to a repository:
+
+```hcl
+template_repositories = [
+  {
+    name        = "my-repo"
+    description = "My repository"
+    visibility  = "private"
+    branch_protection_required_approving_review_count = 1
+    collaborators = [
+      {
+        username   = "developer1"
+        permission = "push"      # Can push to non-protected branches
+      },
+      {
+        username   = "maintainer1"
+        permission = "maintain"  # Can manage some settings
+      },
+      {
+        username   = "admin1"
+        permission = "admin"     # Full access
+      }
+    ]
+  }
+]
+```
+
+### Adding Team Access
+
+To grant teams access (requires teams to already exist):
+
+```hcl
+non_template_repositories = [
+  {
+    name        = "shared-repo"
+    description = "Shared repository"
+    visibility  = "internal"
+    branch_protection_required_approving_review_count = 2
+    teams = [
+      {
+        team_slug  = "backend-developers"
+        permission = "push"
+      },
+      {
+        team_slug  = "platform-team"
+        permission = "admin"
+      }
+    ]
+  }
+]
+```
+
+**Important Notes:**
+- Team slugs are the URL-safe version of team names (lowercase, hyphens instead of spaces)
+- Teams must exist before granting access (Terraform won't create them)
+- Users can have access via both direct collaborator and team membership
+- The highest permission level applies when a user has multiple access grants
+
+### Removing Access
+
+To remove access, simply remove the user or team from the list and run `terraform apply`. Terraform will revoke the access.
 
 ## Troubleshooting
 

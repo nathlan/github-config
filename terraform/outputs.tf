@@ -91,3 +91,37 @@ output "alz_workload_template_is_template" {
   description = "Whether the repository is marked as a template"
   value       = github_repository.alz_workload_template.is_template
 }
+
+# Repository Access Management Outputs
+output "repository_collaborators" {
+  description = "Map of repository collaborators with their access levels"
+  value = {
+    for key, collab in github_repository_collaborator.collaborators : key => {
+      repository = collab.repository
+      username   = collab.username
+      permission = collab.permission
+    }
+  }
+}
+
+output "repository_team_access" {
+  description = "Map of team access grants to repositories"
+  value = {
+    for key, team in github_team_repository.team_access : key => {
+      repository = team.repository
+      team_id    = team.team_id
+      permission = team.permission
+    }
+  }
+}
+
+output "access_summary" {
+  description = "Summary of repository access configuration"
+  value = {
+    total_collaborator_grants = length(github_repository_collaborator.collaborators)
+    total_team_grants         = length(github_team_repository.team_access)
+    repositories_with_access = length(distinct([
+      for key, collab in github_repository_collaborator.collaborators : collab.repository
+    ]))
+  }
+}

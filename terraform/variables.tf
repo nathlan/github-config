@@ -21,6 +21,16 @@ variable "template_repositories" {
     description                                       = string
     visibility                                        = string
     branch_protection_required_approving_review_count = number
+    # Optional: Direct user access - list of objects with username and permission
+    collaborators = optional(list(object({
+      username   = string
+      permission = string # pull, triage, push, maintain, admin
+    })), [])
+    # Optional: Team access - list of objects with team slug and permission
+    teams = optional(list(object({
+      team_slug  = string
+      permission = string # pull, triage, push, maintain, admin
+    })), [])
   }))
   default = []
 
@@ -44,6 +54,24 @@ variable "template_repositories" {
     ])
     error_message = "Required approving review count must be between 0 and 6."
   }
+
+  validation {
+    condition = alltrue(flatten([
+      for repo in var.template_repositories : [
+        for collab in repo.collaborators : contains(["pull", "triage", "push", "maintain", "admin"], collab.permission)
+      ]
+    ]))
+    error_message = "Collaborator permission must be one of: pull, triage, push, maintain, admin."
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for repo in var.template_repositories : [
+        for team in repo.teams : contains(["pull", "triage", "push", "maintain", "admin"], team.permission)
+      ]
+    ]))
+    error_message = "Team permission must be one of: pull, triage, push, maintain, admin."
+  }
 }
 
 variable "non_template_repositories" {
@@ -53,6 +81,16 @@ variable "non_template_repositories" {
     description                                       = string
     visibility                                        = string
     branch_protection_required_approving_review_count = number
+    # Optional: Direct user access - list of objects with username and permission
+    collaborators = optional(list(object({
+      username   = string
+      permission = string # pull, triage, push, maintain, admin
+    })), [])
+    # Optional: Team access - list of objects with team slug and permission
+    teams = optional(list(object({
+      team_slug  = string
+      permission = string # pull, triage, push, maintain, admin
+    })), [])
   }))
   default = []
 
@@ -75,6 +113,24 @@ variable "non_template_repositories" {
       for repo in var.non_template_repositories : repo.branch_protection_required_approving_review_count >= 0 && repo.branch_protection_required_approving_review_count <= 6
     ])
     error_message = "Required approving review count must be between 0 and 6."
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for repo in var.non_template_repositories : [
+        for collab in repo.collaborators : contains(["pull", "triage", "push", "maintain", "admin"], collab.permission)
+      ]
+    ]))
+    error_message = "Collaborator permission must be one of: pull, triage, push, maintain, admin."
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for repo in var.non_template_repositories : [
+        for team in repo.teams : contains(["pull", "triage", "push", "maintain", "admin"], team.permission)
+      ]
+    ]))
+    error_message = "Team permission must be one of: pull, triage, push, maintain, admin."
   }
 }
 

@@ -8,12 +8,35 @@ template_repositories = [
     description                                       = "Example repository created with Terraform"
     visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
+    # Optional: Direct user collaborators with permissions
+    collaborators = [
+      {
+        username   = "bob"
+        permission = "maintain"
+      },
+      {
+        username   = "alice"
+        permission = "push"
+      }
+    ]
+    # Optional: Team access with permissions
+    teams = [
+      {
+        team_slug  = "developers"
+        permission = "push"
+      },
+      {
+        team_slug  = "platform-engineering"
+        permission = "admin"
+      }
+    ]
   },
   {
     name                                              = "alz-prod-api-repo"
     description                                       = "ALZ workload repository for example-api-prod"
     visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
+    # No collaborators or teams specified - using defaults (empty lists)
   }
   # Add more template-based repositories here
 ]
@@ -28,12 +51,32 @@ non_template_repositories = [
     description                                       = "GitHub repository configuration managed with Terraform"
     visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
+    # Optional: Grant platform team admin access
+    teams = [
+      {
+        team_slug  = "platform-engineering"
+        permission = "admin"
+      }
+    ]
   },
   {
     name                                              = "shared-assets"
     description                                       = "Shared assets and resources"
     visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
+    # Optional: Multiple collaborators and teams
+    collaborators = [
+      {
+        username   = "jill"
+        permission = "maintain"
+      }
+    ]
+    teams = [
+      {
+        team_slug  = "developers"
+        permission = "push"
+      }
+    ]
   }
   # Add more non-template repositories here
 ]
