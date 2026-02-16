@@ -253,6 +253,17 @@ resource "github_repository_ruleset" "main_branch_protection" {
     bypass_mode = "pull_request"
   }
 
+  # Allow source-repo-sync app to bypass for PR creation
+  # This app syncs files from source repositories and auto-merges PRs
+  dynamic "bypass_actors" {
+    for_each = var.source_repo_sync_app_id != null ? [1] : []
+    content {
+      actor_id    = var.source_repo_sync_app_id
+      actor_type  = "Integration"
+      bypass_mode = "exempt"
+    }
+  }
+
   rules {
     # Prevent deletion of the main branch
     deletion = true
@@ -309,7 +320,7 @@ resource "github_repository" "alz_workload_template" {
   allow_squash_merge     = true
   allow_merge_commit     = false
   allow_rebase_merge     = true
-  allow_auto_merge       = false
+  allow_auto_merge       = true
   delete_branch_on_merge = true
 
   # Security settings
@@ -350,6 +361,17 @@ resource "github_repository_ruleset" "alz_workload_template_main_protection" {
     actor_id    = 5 # Repository admin role
     actor_type  = "RepositoryRole"
     bypass_mode = "pull_request"
+  }
+
+  # Allow source-repo-sync app to bypass for PR creation
+  # This app syncs files from source repositories and creates PRs
+  dynamic "bypass_actors" {
+    for_each = var.source_repo_sync_app_id != null ? [1] : []
+    content {
+      actor_id    = var.source_repo_sync_app_id
+      actor_type  = "Integration"
+      bypass_mode = "exempt"
+    }
   }
 
   rules {
