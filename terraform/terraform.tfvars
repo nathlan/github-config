@@ -11,20 +11,12 @@ template_repositories = [
     # Optional: Direct user collaborators with permissions
     collaborators = [
       {
-        username   = "bob"
-        permission = "maintain"
-      },
-      {
-        username   = "alice"
-        permission = "push"
+        username   = "nathanjnorris"
+        permission = "owner"
       }
     ]
     # Optional: Team access with permissions
     teams = [
-      {
-        team_slug  = "developers"
-        permission = "push"
-      },
       {
         team_slug  = "platform-engineering"
         permission = "admin"
@@ -52,6 +44,12 @@ non_template_repositories = [
     visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
     # Optional: Grant platform team admin access
+    collaborators = [
+      {
+        username   = "nathanjnorris"
+        permission = "owner"
+      }
+    ]
     teams = [
       {
         team_slug  = "platform-engineering"
@@ -64,17 +62,16 @@ non_template_repositories = [
     description                                       = "Shared assets and resources"
     visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
-    # Optional: Multiple collaborators and teams
     collaborators = [
       {
-        username   = "jill"
-        permission = "maintain"
+        username   = "nathanjnorris"
+        permission = "owner"
       }
     ]
     teams = [
       {
-        team_slug  = "developers"
-        permission = "push"
+        team_slug  = "platform-engineering"
+        permission = "admin"
       }
     ]
   }
