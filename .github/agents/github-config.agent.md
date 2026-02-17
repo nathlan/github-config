@@ -2,7 +2,7 @@
 name: GitHub Configuration Agent
 description: Discovers GitHub settings and generates Terraform code to manage configuration via pull requests
 tools:
-  ['execute', 'read', 'agent', 'edit', 'search', 'github/*', 'azure-mcp/search']
+  ['execute', 'read', 'agent', 'edit', 'search', 'github/*',]
 agents: ["cicd-workflow"]
 mcp-servers:
   terraform:
@@ -23,39 +23,6 @@ mcp-servers:
     tools: ["*"]
     headers:
       X-MCP-Toolsets: all
-handoffs:
-  - label: "Add CI/CD Workflows"
-    agent: cicd-workflow
-    prompt: "Create GitHub Actions workflows for this Terraform code with validation, security scanning, and deployment automation for the GitHub provider"
-    send: true
-inbound-prompts:
-  - name: "GitHub Settings Discovery"
-    purpose: "Gather requirements for GitHub configuration changes before generating Terraform"
-    prompt: |
-      I'll help you configure GitHub settings using infrastructure-as-code. Let me understand what you need:
-
-      **Scope:**
-      What level are we configuring?
-      - Repository level (specific repos or patterns)
-      - Organization level (org-wide settings, teams)
-      - Enterprise level
-
-      **Changes Needed:**
-      What would you like to configure?
-      - Branch protection rules
-      - Team access and permissions
-      - Repository settings (features, merge strategies)
-      - Organization settings (defaults, security)
-      - Actions/Dependabot configuration
-      - Webhooks or integrations
-      - Other (please describe)
-
-      **Details:**
-      - Which repositories/teams/resources?
-      - What specific settings or rules?
-      - Any special requirements or exceptions?
-
-      Once I understand your requirements, I'll hand off to the GitHub Configuration Agent to generate the Terraform code via pull request.
 ---
 
 # GitHub Configuration Agent
