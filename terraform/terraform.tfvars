@@ -52,6 +52,22 @@ template_repositories = [
         permission = "admin"
       }
     ]
+  },
+  {
+    name                                              = "alz-one-made-earlier"
+    description                                       = "ALZ workload repository for one-made-earlier (Test)"
+    visibility                                        = "internal"
+    branch_protection_required_approving_review_count = 1
+    teams = [
+      {
+        team_slug  = "app-dev-team"
+        permission = "maintain"
+      },
+      {
+        team_slug  = "platform-engineering"
+        permission = "admin"
+      }
+    ]
   }
   # Add more template-based repositories here
 ]
