@@ -54,8 +54,8 @@ template_repositories = [
     ]
   },
   {
-    name                                              = "agent-dispatcher-repo"
-    description                                       = "ALZ workload repository for agent-dispatcher (Test)"
+    name                                              = "alz-one-made-earlier"
+    description                                       = "ALZ workload repository for one-made-earlier (Test)"
     visibility                                        = "internal"
     branch_protection_required_approving_review_count = 1
     teams = [
