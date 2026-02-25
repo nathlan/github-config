@@ -229,6 +229,33 @@ resource "github_workflow_repository_permissions" "all_repos" {
   can_approve_pull_request_reviews = var.enable_copilot_pr_from_actions
 }
 
+# Configure OIDC subject claims for all repositories to support reusable workflow federation.
+# This enables tokens to include the called workflow reference via job_workflow_ref.
+resource "github_actions_repository_oidc_subject_claim_customization_template" "all_repos" {
+  for_each = local.all_repos
+
+  repository  = each.value.name
+  use_default = false
+
+  include_claim_keys = [
+    "repo",
+    "context",
+    "job_workflow_ref"
+  ]
+}
+
+# Apply the same OIDC subject claim customization to the template repository.
+resource "github_actions_repository_oidc_subject_claim_customization_template" "alz_workload_template" {
+  repository  = github_repository.alz_workload_template.name
+  use_default = false
+
+  include_claim_keys = [
+    "repo",
+    "context",
+    "job_workflow_ref"
+  ]
+}
+
 # Create branch protection ruleset for main branch on all repositories
 resource "github_repository_ruleset" "main_branch_protection" {
   for_each = local.all_repo_configs
