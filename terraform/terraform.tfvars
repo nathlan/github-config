@@ -40,7 +40,7 @@ template_repositories = [
   {
     name                                              = "graphql-repo"
     description                                       = "ALZ workload repository for graphql (Development)"
-    visibility                                        = "internal"
+    visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
     teams = [
       {
@@ -56,7 +56,7 @@ template_repositories = [
   {
     name                                              = "alz-one-made-earlier"
     description                                       = "ALZ workload repository for one-made-earlier (Test)"
-    visibility                                        = "internal"
+    visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
     teams = [
       {
@@ -72,7 +72,7 @@ template_repositories = [
   {
     name                                              = "alz-vartika-test"
     description                                       = "ALZ workload repository for alz-vartika-test (Test)"
-    visibility                                        = "internal"
+    visibility                                        = "public"
     branch_protection_required_approving_review_count = 1
     teams = [
       {
