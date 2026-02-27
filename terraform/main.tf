@@ -234,7 +234,7 @@ resource "github_workflow_repository_permissions" "all_repos" {
 resource "github_actions_repository_oidc_subject_claim_customization_template" "all_repos" {
   for_each = {
     for name, repo in local.all_repos : name => repo
-    if name == "shared-assets"
+    if contains(["shared-assets", "alz-vartika-test"], name)
   }
 
   repository  = each.value.name
